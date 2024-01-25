@@ -1,0 +1,13 @@
+name: gwaspipe
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python<=3.10
+  - pip==23.3.2
+  - pip:
+      - gwaslab==3.4.36
+      - ruamel.yaml==0.18.5
+      - click==8.1.7
+      - loguru==0.7.2
+      - appdirs == 1.4.4

@@ -1,0 +1,50 @@
+---
+# common parameters
+n_cores: &cores 3
+
+# this is an ordered dict
+#actions: !!omap
+#  - 1: 'infer_build'
+#  - 2: 'report'
+#  - 3: 'io'
+actions:
+  basic_check:
+    run: True
+    n_cores: *cores
+  infer_build:
+    run: False
+  fill_data:
+    run: True
+    to_fill: ['MLOG10P', 'Z']
+    overwrite: False
+    extreme: False
+  harmonize:
+    run: True
+    basic_check: False
+    n_cores: *cores
+    ref_seq: "data/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"
+    ref_infer: "data/EUR.ALL.split_norm_af.1kgp3v5.hg19.vcf.gz"
+    ref_alt_freq: "AF"
+    remove: "True"
+    removedup_args: {'mode': "md",'keep': 'first','keep_col': "MLOG10P" }
+  report_summary:
+    run: True
+  report_inflation_factors:
+    run: True
+  write_ldsc:
+    run: false
+    fmt: "ldsc"
+  write_metal:
+    run: False
+    fmt: "metal"
+  write_regenie:
+    run: True
+    fmt: "regenie"
+  write_vcf:
+    run: false
+    fmt: "vcf"
+
+# IO
+save_path: "results"
+log_filename: "gwaspipe.log"
+report_filename: "report_placeholder.txt"
