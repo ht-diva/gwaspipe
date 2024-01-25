@@ -2,12 +2,14 @@
 # common parameters
 n_cores: &cores 3
 
-# this is an ordered dict
-#actions: !!omap
-#  - 1: 'infer_build'
-#  - 2: 'report'
-#  - 3: 'io'
-actions:
+# this is an ordered dict containing the steps run sequence
+run_sequence: !!omap
+  - 1: 'basic_check'
+  - 2: 'fill_data'
+  - 3: 'infer_build'
+  - 4: 'write_csv'
+
+steps:
   basic_check:
     run: True
     n_cores: *cores
@@ -32,16 +34,16 @@ actions:
   report_inflation_factors:
     run: True
   write_ldsc:
-    run: false
+    run: False
     fmt: "ldsc"
   write_metal:
     run: False
     fmt: "metal"
   write_regenie:
-    run: True
+    run: False
     fmt: "regenie"
   write_vcf:
-    run: false
+    run: False
     fmt: "vcf"
 
 # IO
