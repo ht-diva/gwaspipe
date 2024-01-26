@@ -10,4 +10,3 @@ dependencies:
       - ruamel.yaml==0.18.5
       - click==8.1.7
       - loguru==0.7.2
-      - appdirs == 1.4.4
