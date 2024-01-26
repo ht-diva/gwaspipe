@@ -1,0 +1,60 @@
+---
+# common parameters
+n_cores: &cores 3
+
+# This is an ordered dict that contains the order in which the steps are run.
+run_sequence: !!omap
+  - 1: 'basic_check'
+  - 2: 'infer_build'
+  - 3: 'liftover'
+  - 4: 'write_same_input_format'
+
+steps:
+  basic_check:
+    run: True
+    n_cores: *cores
+  infer_build:
+    run: True
+  fill_data:
+    run: False
+    to_fill: ['MLOG10P', 'Z']
+    overwrite: False
+    extreme: False
+  harmonize:
+    run: False
+    basic_check: False
+    n_cores: *cores
+    ref_seq: "data/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"
+    ref_infer: "data/EUR.ALL.split_norm_af.1kgp3v5.hg19.vcf.gz"
+    ref_alt_freq: "AF"
+    remove: "True"
+    removedup_args: {'mode': "md",'keep': 'first','keep_col': "MLOG10P" }
+  liftover:
+    run: False
+    n_cores: *cores
+    from_build: "19"
+    to_build: "38"
+    remove: True
+  report_summary:
+    run: False
+  report_inflation_factors:
+    run: False
+  write_same_input_format:
+    run: True
+  write_ldsc:
+    run: False
+    fmt: "ldsc"
+  write_metal:
+    run: False
+    fmt: "metal"
+  write_regenie:
+    run: False
+    fmt: "regenie"
+  write_vcf:
+    run: False
+    fmt: "vcf"
+
+# IO
+save_path: "results"
+log_filename: "gwaspipe.log"
+report_filename: "report_placeholder.txt"

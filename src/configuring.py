@@ -2,8 +2,6 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
-from utils import log_file
-
 
 class SingletonConfigurationManager(type):
     """Metaclass."""

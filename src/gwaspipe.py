@@ -19,7 +19,7 @@ class SumstatsManager:
     "-f",
     "--input_file_format",
     required=True,
-    type=click.Choice(["regenie", "vcf"], case_sensitive=False),
+    type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma"], case_sensitive=False),
     help="Input file format",
 )
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
@@ -53,10 +53,11 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
 
     for step in cm.run_sequence:
         run, params = cm.step(step)
+        print(run, step, params)
         if run and step == "basic_check":
             logger.info(f"Started {step} step")
             sm.mysumstats.basic_check(**params)
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
         elif run and step == "infer_build":
             logger.info(f"Started {step} step")
             sm.mysumstats.infer_build()
@@ -64,16 +65,20 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             text = f"\nInferred genome build: {genome_build}\n"
             with open(report_file_path, "a") as fp:
                 fp.write(text)
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
         elif run and step == "fill_data":
             logger.info(f"Started {step} step")
             sm.mysumstats.fill_data(**params)
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
         elif run and step == "harmonize":
             logger.info(f"Started {step} step")
             sm.mysumstats.harmonize(**params)
             sm.mysumstats.flip_allele_status()
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
+        elif run and step =="liftover":
+            logger.info(f"Started {step} step")
+            sm.mysumstats.liftover(**params)
+            logger.info(f"Finished {step} step")
         elif run and step == "report_summary":
             logger.info(f"Started {step} step")
             header = f"Summary:"
@@ -81,7 +86,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             with open(report_file_path, "a") as fp:
                 fp.write(header)
                 fp.write(summary)
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
         elif run and step == "report_inflation_factors":
             logger.info(f"Started {step} step")
             header = f"\nInflation factors:"
@@ -95,12 +100,17 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 if mean_chisq < 1.02:
                     fp.write(" WARNING: mean chi^2 may be too small.")
                 fp.write("\nMax chi^2 = " + str(round(CHISQ.max(), 3)))
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
         elif run and step in ["write_ldsc", "write_metal", "write_vcf"]:
             logger.info(f"Started {step} step")
             output_path = str(Path(cm.save_path, input_file_path.stem))
             sm.mysumstats.to_format(output_path, **params)
-            logger.info(f"Ended {step} step")
+            logger.info(f"Finished {step} step")
+        elif run and step == 'write_same_input_format':
+            logger.info(f"Started {step} step")
+            output_path = str(Path(cm.save_path, input_file_path.stem))
+            sm.mysumstats.to_format(output_path, fmt=input_file_format, **params)
+            logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
 
