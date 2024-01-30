@@ -40,8 +40,8 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         return Path(self.root_path, self.c["log_filename"])
 
     @property
-    def report_filename(self):
-        return self.c["report_filename"]
+    def report_if_filename(self):
+        return self.c["report_if_filename"]
 
     @property
     def steps(self):

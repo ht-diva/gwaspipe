@@ -39,6 +39,7 @@ steps:
     run: True
   report_inflation_factors:
     run: True
+    workspace: "if"
   write_same_input_format:
     run: False
     workspace: "outputs"
@@ -63,4 +64,4 @@ steps:
 # IO
 root_path: "results"
 log_filename: "gwaspipe.log"
-report_filename: "report_placeholder.txt"
+report_if_filename: "report_if_placeholder.txt"

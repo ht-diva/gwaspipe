@@ -23,7 +23,7 @@ steps:
     overwrite: False
     extreme: False
   harmonize:
-    run: True
+    run: False
     basic_check: False
     n_cores: *cores
     ref_seq: "data/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"
@@ -35,6 +35,7 @@ steps:
     run: False
   report_inflation_factors:
     run: True
+    workspace: "if"
   write_same_input_format:
     run: False
     workspace: "outputs"
@@ -58,4 +59,4 @@ steps:
 # IO
 root_path: "results"
 log_filename: "gwaspipe.log"
-report_filename: "report_placeholder.txt"
+report_if_filename: "report_if_placeholder.txt"

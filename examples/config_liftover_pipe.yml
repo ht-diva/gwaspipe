@@ -39,6 +39,7 @@ steps:
     run: False
   report_inflation_factors:
     run: False
+    workspace: "if"
   write_same_input_format:
     run: True
     workspace: "outputs"

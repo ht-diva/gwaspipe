@@ -38,13 +38,6 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
     input_file_name = input_file_path.name
     input_file_stem = input_file_path.stem
 
-    report_file_path = Path(
-        cm.root_path,
-        cm.report_filename.replace("placeholder", input_file_name)
-    )
-    with open(report_file_path, "w") as fp:
-        fp.write(f"input file path: {input_file_path}")
-
     if input_file_path.exists():
         sm = SumstatsManager(
             input_file_path.as_posix(), input_file_format, input_file_separator
@@ -69,8 +62,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             sm.mysumstats.infer_build()
             genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
             text = f"\nInferred genome build: {genome_build}\n"
-            with open(report_file_path, "a") as fp:
-                fp.write(text)
+            # with open(report_if_file_path, "a") as fp:
+            #     fp.write(text)
             logger.info(f"Finished {step} step")
         elif run and step == "fill_data":
             logger.info(f"Started {step} step")
@@ -89,23 +82,25 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             logger.info(f"Started {step} step")
             header = f"Summary:"
             summary = sm.mysumstats.summary().to_string()
-            with open(report_file_path, "a") as fp:
-                fp.write(header)
-                fp.write(summary)
+            # with open(report_if_file_path, "a") as fp:
+            #     fp.write(header)
+            #     fp.write(summary)
             logger.info(f"Finished {step} step")
         elif run and step == "report_inflation_factors":
             logger.info(f"Started {step} step")
-            header = f"\nInflation factors:"
             df = sm.mysumstats.data
             CHISQ = df.Z**2
-            mean_chisq = CHISQ.mean()
-            with open(report_file_path, "a") as fp:
-                fp.write(header)
-                fp.write("\nLambda GC = " + str(round(CHISQ.median() / 0.4549, 3)))
-                fp.write("\nMean chi^2 = " + str(round(mean_chisq, 3)))
-                if mean_chisq < 1.02:
-                    fp.write(" WARNING: mean chi^2 may be too small.")
-                fp.write("\nMax chi^2 = " + str(round(CHISQ.max(), 3)))
+            max_chisq = str(round(CHISQ.max(), 3))
+            mean_chisq = str(round(CHISQ.mean(), 3))
+            lambda_GC = str(round(CHISQ.median() / 0.4549, 3))
+
+            report_if_file_path = Path(
+                workspace_path,
+                cm.report_if_filename.replace("placeholder", input_file_name)
+            )
+            with open(report_if_file_path, "w") as fp:
+                fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
+                fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}")
             logger.info(f"Finished {step} step")
         elif run and step in ["write_ldsc", "write_metal", "write_vcf"]:
             logger.info(f"Started {step} step")
