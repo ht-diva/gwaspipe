@@ -36,9 +36,11 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
 
     input_file_path = Path(input_file)
     input_file_name = input_file_path.name
+    input_file_stem = input_file_path.stem
 
     report_file_path = Path(
-        cm.save_path, cm.report_filename.replace("placeholder", input_file_name)
+        cm.root_path,
+        cm.report_filename.replace("placeholder", input_file_name)
     )
     with open(report_file_path, "w") as fp:
         fp.write(f"input file path: {input_file_path}")
@@ -52,11 +54,15 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
         exit(msg)
 
     for step in cm.run_sequence:
-        run, params = cm.step(step)
-        print(run, step, params)
+        params, gl_params = cm.step(step)
+        run  = params['run']
+        workspace = params['workspace']
+        workspace_path = Path(cm.root_path,workspace)
+        workspace_path.mkdir(parents=True, exist_ok=True)
+
         if run and step == "basic_check":
             logger.info(f"Started {step} step")
-            sm.mysumstats.basic_check(**params)
+            sm.mysumstats.basic_check(**gl_params)
             logger.info(f"Finished {step} step")
         elif run and step == "infer_build":
             logger.info(f"Started {step} step")
@@ -68,16 +74,16 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             logger.info(f"Finished {step} step")
         elif run and step == "fill_data":
             logger.info(f"Started {step} step")
-            sm.mysumstats.fill_data(**params)
+            sm.mysumstats.fill_data(**gl_params)
             logger.info(f"Finished {step} step")
         elif run and step == "harmonize":
             logger.info(f"Started {step} step")
-            sm.mysumstats.harmonize(**params)
+            sm.mysumstats.harmonize(**gl_params)
             sm.mysumstats.flip_allele_status()
             logger.info(f"Finished {step} step")
         elif run and step =="liftover":
             logger.info(f"Started {step} step")
-            sm.mysumstats.liftover(**params)
+            sm.mysumstats.liftover(**gl_params)
             logger.info(f"Finished {step} step")
         elif run and step == "report_summary":
             logger.info(f"Started {step} step")
@@ -103,13 +109,13 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             logger.info(f"Finished {step} step")
         elif run and step in ["write_ldsc", "write_metal", "write_vcf"]:
             logger.info(f"Started {step} step")
-            output_path = str(Path(cm.save_path, input_file_path.stem))
-            sm.mysumstats.to_format(output_path, **params)
+            output_path = str(Path(workspace_path, input_file_stem))
+            sm.mysumstats.to_format(output_path, **gl_params)
             logger.info(f"Finished {step} step")
         elif run and step == 'write_same_input_format':
             logger.info(f"Started {step} step")
-            output_path = str(Path(cm.save_path, input_file_path.stem))
-            sm.mysumstats.to_format(output_path, fmt=input_file_format, **params)
+            output_path = str(Path(workspace_path, input_file_stem))
+            sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")

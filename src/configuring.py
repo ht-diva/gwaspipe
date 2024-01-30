@@ -30,14 +30,14 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
             exit(msg)
 
     @property
-    def save_path(self):
-        path = Path(self.c["save_path"])
+    def root_path(self):
+        path = Path(self.c["root_path"])
         path.mkdir(exist_ok=True)
         return path
 
     @property
     def log_file_path(self):
-        return Path(self.save_path, self.c["log_filename"])
+        return Path(self.root_path, self.c["log_filename"])
 
     @property
     def report_filename(self):
@@ -48,15 +48,16 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         return self.c["steps"].keys()
 
     def step(self, name):
-        run = False
-        params = {}
+        params = {'run': False,
+                  'workspace': ''}
+        gl_params = {}
         if name in self.steps:
             for k, v in self.c["steps"][name].items():
-                if k == "run":
-                    run = v
-                else:
+                if k in params.keys():
                     params[k] = v
-        return run, params
+                else:
+                    gl_params[k] = v
+        return params, gl_params
 
     @property
     def run_sequence(self):

@@ -41,20 +41,25 @@ steps:
     run: False
   write_same_input_format:
     run: True
+    workspace: "outputs"
   write_ldsc:
     run: False
+    workspace: "ldsc"
     fmt: "ldsc"
   write_metal:
     run: False
+    workspace: "metal"
     fmt: "metal"
   write_regenie:
     run: False
+    workspace: "regenie"
     fmt: "regenie"
   write_vcf:
     run: False
+    workspace: "vcf"
     fmt: "vcf"
 
 # IO
-save_path: "results"
+root_path: "results"
 log_filename: "gwaspipe.log"
 report_filename: "report_placeholder.txt"
