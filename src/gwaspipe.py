@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import click
 import gwaslab as gl
 
@@ -111,6 +112,12 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             logger.info(f"Started {step} step")
             output_path = str(Path(workspace_path, input_file_stem))
             sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
+            logger.info(f"Finished {step} step")
+        elif run and step == 'qq_manhattan_plots':
+            logger.info(f"Started {step} step")
+            output_path = str(Path(cm.save_path, input_file_path.stem))
+            cut = round(-np.log10(gl_params['sig_level'])) + params['dist']
+            sm.mysumstats.plot_mqq(cut = cut, save = output_path, **gl_params)
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
