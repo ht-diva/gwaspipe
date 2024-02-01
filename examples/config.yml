@@ -40,6 +40,16 @@ steps:
   report_inflation_factors:
     run: True
     workspace: "if"
+  qq_manhattan_plots:
+    run: True
+    stratified : True
+    maf_bins:  [(0, 0.01), (0.01, 0.05), (0.05, 1)]
+    scaled: True
+    build: "19"
+    skip: 1
+    dist: 2
+    sig_level: 5e-8
+    workspace: "plots"
   write_same_input_format:
     run: False
     workspace: "outputs"
