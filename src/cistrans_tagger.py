@@ -55,7 +55,7 @@ def df_to_bed(df, chrom_col, start_col, end_col, name_col=None):
 def cistrans_gene_tagger(params, output_path):
 
     # Set up logging
-    log_file_path = os.path.join(params['save_path'], 'cis_trans_tagging_log.txt')
+    log_file_path = os.path.join(output_path, 'cis_trans_tagging_log.txt')
     setup_logging(log_file_path)
 
 
@@ -92,6 +92,12 @@ def cistrans_gene_tagger(params, output_path):
 
             for file in snp_files:
                 if '.log' not in file:
+                    
+                    if 'cojo' in file.lower():
+                        file_suffix = '_cojo'
+                    elif 'clump' in file.lower():
+                        file_suffix = '_clump'
+                        
                     snp_df = pd.read_csv(file, sep="\t", dtype=column_types)
 
                     # transform strings to numbers
@@ -182,8 +188,10 @@ def cistrans_gene_tagger(params, output_path):
     
     print("Processing completed. Saving results table.")
     
-    # Save the DataFrame as a pickle file
-    pickle_file_path = output_path + '.pkl'
+    
+    output_filename = f'cistrans_annotated_table{file_suffix}.pkl'  # Include the suffix in the filename
+    pickle_file_path = os.path.join(output_path, output_filename)
+    
     all_snps_combined_df.to_pickle(pickle_file_path)
     
     print("All done.")
