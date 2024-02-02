@@ -123,8 +123,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             logger.info(f"Finished {step} step")
         elif run and step == 'cistrans_annotation':
             logger.info(f"Started {step} step")
-            output_path = str(Path(workspace_path, input_file_stem))
-            cistrans_gene_tagger(params, output_path)
+            cistrans_gene_tagger(params, workspace_path)
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
