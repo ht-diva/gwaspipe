@@ -9,7 +9,9 @@ from utils import __appname__, logger
 
 
 class SumstatsManager:
-    def __init__(self, input_path, input_format, input_separator):
+    def __init__(self, input_path, input_format, input_separator, formatbook_path):
+        if formatbook_path.exists():
+            gl.options.set_option("formatbook", str(formatbook_path))
         self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
 
 
@@ -38,10 +40,12 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
     input_file_path = Path(input_file)
     input_file_name = input_file_path.name
     input_file_stem = input_file_path.stem
+    formatbook_file_path = Path(cm.formatbook_path)
 
     if input_file_path.exists():
         sm = SumstatsManager(
-            input_file_path.as_posix(), input_file_format, input_file_separator
+            input_file_path.as_posix(), input_file_format, input_file_separator,
+            formatbook_file_path
         )
     else:
         msg = f"{input_file_path} input file not found"
@@ -103,7 +107,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
                 fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}")
             logger.info(f"Finished {step} step")
-        elif run and step in ["write_ldsc", "write_metal", "write_vcf"]:
+        elif run and step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv"]:
             logger.info(f"Started {step} step")
             output_path = str(Path(workspace_path, input_file_stem))
             sm.mysumstats.to_format(output_path, **gl_params)

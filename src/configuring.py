@@ -44,6 +44,10 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         return self.c["report_if_filename"]
 
     @property
+    def formatbook_path(self):
+        return self.c["formatbook_path"]
+
+    @property
     def steps(self):
         return self.c["steps"].keys()
 

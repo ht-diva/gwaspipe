@@ -7,14 +7,14 @@ run_sequence: !!omap
   - 1: 'basic_check'
   - 2: 'fill_data'
   - 3: 'infer_build'
-  - 4: 'write_csv'
+  - 4: 'write_regenie'
 
 steps:
   basic_check: # see https://cloufield.github.io/gwaslab/Standardization/
     run: True
     n_cores: *cores
   infer_build: # see https://cloufield.github.io/gwaslab/InferBuild/
-    run: False
+    run: True
   fill_data: # see https://cloufield.github.io/gwaslab/Conversion/#fill_data
     run: True
     to_fill: ['MLOG10P', 'Z']
@@ -53,6 +53,10 @@ steps:
   write_same_input_format:
     run: False
     workspace: "outputs"
+  write_tsv:
+    run: False
+    workspace: "outputs"
+    fmt: "gwaslab"
   # see https://cloufield.github.io/gwaslab/Format/ for more details on writing options
   write_ldsc:
     run: False
@@ -63,7 +67,7 @@ steps:
     workspace: "metal"
     fmt: "metal"
   write_regenie:
-    run: False
+    run: True
     workspace: "regenie"
     fmt: "regenie"
   write_vcf:
@@ -75,3 +79,4 @@ steps:
 root_path: "results"
 log_filename: "gwaspipe.log"
 report_if_filename: "report_if_placeholder.txt"
+formatbook_path: " "     # fill this var if you want to provide a custom formatbook
