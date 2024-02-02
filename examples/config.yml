@@ -50,6 +50,23 @@ steps:
     dist: 2
     sig_level: 5e-8
     workspace: "plots"
+  cistrans_annotation:
+    target_gene_map_file_dir: "data/target_gene_mapping_file_v9-12-23.csv"
+    map_file_chrom_col: "chromosome"
+    map_file_start_col: "start"
+    map_file_end_col: "end"
+    map_file_gene_name: "Entrez_Gene_Name"
+    gene_pos_file_dir: "data/glist-hg19.txt"
+    genepos_file_genecol_name: "GENE_NAME"
+    gwas_files_dir: "path/to/cojo/or/clump/files"
+    prot_id_column_name: "SeqId"
+    pval_column: "P"
+    snp_file_pos_col: "POS"
+    snp_file_chrom_col: "#CHROM"
+    pvalue_threshold: 5e-8
+    region_buffer_value: 500000
+    proximality_threshold: 5000
+    columns_to_drop: []
   write_same_input_format:
     run: False
     workspace: "outputs"
