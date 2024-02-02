@@ -67,6 +67,7 @@ steps:
     region_buffer_value: 500000
     proximality_threshold: 5000
     columns_to_drop: []
+    workspace: "cistrans_tag"
   write_same_input_format:
     run: False
     workspace: "outputs"
