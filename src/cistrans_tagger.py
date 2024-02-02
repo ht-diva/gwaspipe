@@ -52,7 +52,7 @@ def df_to_bed(df, chrom_col, start_col, end_col, name_col=None):
 
 
 
-def cistrans_gene_tagger(params):
+def cistrans_gene_tagger(params, output_path):
 
     # Set up logging
     log_file_path = os.path.join(params['save_path'], 'cis_trans_tagging_log.txt')
@@ -183,7 +183,7 @@ def cistrans_gene_tagger(params):
     print("Processing completed. Saving results table.")
     
     # Save the DataFrame as a pickle file
-    pickle_file_path = os.path.join(params['save_path'], params['output_filename'])
+    pickle_file_path = output_path + '.pkl'
     all_snps_combined_df.to_pickle(pickle_file_path)
     
     print("All done.")
