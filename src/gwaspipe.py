@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 import click
 import gwaslab as gl
+import cistrans_tagger
+from cistrans_tagger import *
 
 from configuring import ConfigurationManager
 from utils import __appname__, logger
@@ -122,6 +124,10 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             output_path = str(Path(workspace_path, input_file_stem))
             cut = round(-np.log10(gl_params['sig_level'])) + params['dist']
             sm.mysumstats.plot_mqq(cut = cut, save = output_path, **gl_params)
+            logger.info(f"Finished {step} step")
+        elif run and step == 'cistrans_annotation':
+            logger.info(f"Started {step} step")
+            cistrans_gene_tagger(params, workspace_path)
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
