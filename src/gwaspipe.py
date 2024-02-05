@@ -107,7 +107,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             )
             with open(report_if_file_path, "w") as fp:
                 fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
-                fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}")
+                fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
             logger.info(f"Finished {step} step")
         elif run and step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv"]:
             logger.info(f"Started {step} step")
