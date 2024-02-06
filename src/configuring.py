@@ -52,16 +52,15 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         return self.c["steps"].keys()
 
     def step(self, name):
-        params = {'run': False,
-                  'workspace': '',
-                  'dist': 2}
-        gl_params = {}
-        if name in self.steps:
-            for k, v in self.c["steps"][name].items():
-                if k in params.keys():
-                    params[k] = v
-                else:
-                    gl_params[k] = v
+        # use get method with default values
+        params = self.c["steps"].get(name, {}).get("params", {"run": False,
+                                                              "workspace": ""})
+        for k,v in [('run', False), ('workspace', '')]:
+            if k not in params.keys():
+                params[k] = v
+
+        gl_params = self.c["steps"].get(name, {}).get("gl_params", {})
+
         return params, gl_params
 
     @property

@@ -121,9 +121,9 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             logger.info(f"Finished {step} step")
         elif run and step == 'qq_manhattan_plots':
             logger.info(f"Started {step} step")
-            output_path = str(Path(workspace_path, input_file_stem))
+            output_path = str(Path(workspace_path, '.'.join([input_file_stem, 'png'])))
             cut = round(-np.log10(gl_params['sig_level'])) + params['dist']
-            sm.mysumstats.plot_mqq(cut = cut, save = output_path, **gl_params)
+            sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
             logger.info(f"Finished {step} step")
         elif run and step == 'cistrans_annotation':
             logger.info(f"Started {step} step")
