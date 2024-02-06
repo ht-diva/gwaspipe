@@ -53,7 +53,8 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
 
     def step(self, name):
         params = {'run': False,
-                  'workspace': ''}
+                  'workspace': '',
+                  'dist': 2}
         gl_params = {}
         if name in self.steps:
             for k, v in self.c["steps"][name].items():
