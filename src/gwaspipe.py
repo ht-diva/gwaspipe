@@ -79,7 +79,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
                 sm.mysumstats.harmonize(**gl_params)
-                sm.mysumstats.flip_allele_status()
+                sm.mysumstats.flip_allele_stats()
             elif step =="liftover":
                 sm.mysumstats.liftover(**gl_params)
             elif step == "report_summary":
