@@ -97,7 +97,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
 
                 report_if_file_path = Path(
                     workspace_path,
-                    cm.report_if_filename.replace("placeholder", input_file_name)
+                    cm.report_if_filename.replace("placeholder", input_file_stem)
                 )
                 with open(report_if_file_path, "w") as fp:
                     fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
