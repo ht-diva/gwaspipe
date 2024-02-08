@@ -62,9 +62,9 @@ steps:
       workspace: "plots"
       dist: 2
     gl_params:
-      mode: 'm'
+      mode: 'mqq'
       stratified : True
-      maf_bins:  [(0, 0.01), (0.01, 0.05), (0.05, 1)]
+      maf_bins: [[0, 0.01], [0.01, 0.05], [0.05, 1]]
       scaled: True
       build: "19"
       skip: 1
