@@ -14,7 +14,11 @@ class SumstatsManager:
     def __init__(self, input_path, input_format, input_separator, formatbook_path):
         if formatbook_path.exists():
             gl.options.set_option("formatbook", str(formatbook_path))
-        self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
+        if input_format == 'pickle':
+            self.mysumstats = gl.load_pickle(input_path)
+        else:
+            self.mysumstats = gl.Sumstats(input_path, fmt=input_format,
+                                          sep=input_separator)
 
 
 @click.command()
@@ -24,7 +28,7 @@ class SumstatsManager:
     "-f",
     "--input_file_format",
     required=True,
-    type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma"], case_sensitive=False),
+    type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma", "pickle"], case_sensitive=False),
     help="Input file format",
 )
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
@@ -46,7 +50,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
 
     if input_file_path.exists():
         sm = SumstatsManager(
-            input_file_path.as_posix(), input_file_format, input_file_separator,
+            input_file_path.as_posix(), input_file_format,
+            input_file_separator,
             formatbook_file_path
         )
     else:
@@ -60,75 +65,60 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
         workspace_path = Path(cm.root_path,workspace)
         workspace_path.mkdir(parents=True, exist_ok=True)
 
-        if run and step == "basic_check":
+        if run:
             logger.info(f"Started {step} step")
-            sm.mysumstats.basic_check(**gl_params)
-            logger.info(f"Finished {step} step")
-        elif run and step == "infer_build":
-            logger.info(f"Started {step} step")
-            sm.mysumstats.infer_build()
-            genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
-            text = f"\nInferred genome build: {genome_build}\n"
-            # with open(report_if_file_path, "a") as fp:
-            #     fp.write(text)
-            logger.info(f"Finished {step} step")
-        elif run and step == "fill_data":
-            logger.info(f"Started {step} step")
-            sm.mysumstats.fill_data(**gl_params)
-            logger.info(f"Finished {step} step")
-        elif run and step == "harmonize":
-            logger.info(f"Started {step} step")
-            sm.mysumstats.harmonize(**gl_params)
-            sm.mysumstats.flip_allele_status()
-            logger.info(f"Finished {step} step")
-        elif run and step =="liftover":
-            logger.info(f"Started {step} step")
-            sm.mysumstats.liftover(**gl_params)
-            logger.info(f"Finished {step} step")
-        elif run and step == "report_summary":
-            logger.info(f"Started {step} step")
-            header = f"Summary:"
-            summary = sm.mysumstats.summary().to_string()
-            # with open(report_if_file_path, "a") as fp:
-            #     fp.write(header)
-            #     fp.write(summary)
-            logger.info(f"Finished {step} step")
-        elif run and step == "report_inflation_factors":
-            logger.info(f"Started {step} step")
-            df = sm.mysumstats.data
-            CHISQ = df.Z**2
-            max_chisq = str(round(CHISQ.max(), 3))
-            mean_chisq = str(round(CHISQ.mean(), 3))
-            lambda_GC = str(round(CHISQ.median() / 0.4549, 3))
+            if step == "basic_check":
+                sm.mysumstats.basic_check(**gl_params)
+            elif step == "infer_build":
+                sm.mysumstats.infer_build()
+                genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
+                text = f"\nInferred genome build: {genome_build}\n"
+                # with open(report_if_file_path, "a") as fp:
+                #     fp.write(text)
+            elif step == "fill_data":
+                sm.mysumstats.fill_data(**gl_params)
+            elif step == "harmonize":
+                sm.mysumstats.harmonize(**gl_params)
+                sm.mysumstats.flip_allele_status()
+            elif step =="liftover":
+                sm.mysumstats.liftover(**gl_params)
+            elif step == "report_summary":
+                header = f"Summary:"
+                summary = sm.mysumstats.summary().to_string()
+                # with open(report_if_file_path, "a") as fp:
+                #     fp.write(header)
+                #     fp.write(summary)
+            elif step == "report_inflation_factors":
+                df = sm.mysumstats.data
+                CHISQ = df.Z**2
+                max_chisq = str(round(CHISQ.max(), 3))
+                mean_chisq = str(round(CHISQ.mean(), 3))
+                lambda_GC = str(round(CHISQ.median() / 0.4549, 3))
 
-            report_if_file_path = Path(
-                workspace_path,
-                cm.report_if_filename.replace("placeholder", input_file_name)
-            )
-            with open(report_if_file_path, "w") as fp:
-                fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
-                fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
-            logger.info(f"Finished {step} step")
-        elif run and step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv"]:
-            logger.info(f"Started {step} step")
-            output_path = str(Path(workspace_path, input_file_stem))
-            sm.mysumstats.to_format(output_path, **gl_params)
-            logger.info(f"Finished {step} step")
-        elif run and step == 'write_same_input_format':
-            logger.info(f"Started {step} step")
-            output_path = str(Path(workspace_path, input_file_stem))
-            sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
-            logger.info(f"Finished {step} step")
-        elif run and step == 'qq_manhattan_plots':
-            logger.info(f"Started {step} step")
-            output_path = str(Path(workspace_path, '.'.join([input_file_stem, 'png'])))
-            cut = round(-np.log10(gl_params['sig_level'])) + params['dist']
-            sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
-            logger.info(f"Finished {step} step")
-        elif run and step == 'cistrans_annotation':
-            logger.info(f"Started {step} step")
-            cistrans_gene_tagger(params, workspace_path)
-            logger.info(f"Finished {step} step")
+                report_if_file_path = Path(
+                    workspace_path,
+                    cm.report_if_filename.replace("placeholder", input_file_name)
+                )
+                with open(report_if_file_path, "w") as fp:
+                    fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
+                    fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
+            elif step == 'write_pickle':
+                output_path = str(
+                    Path(workspace_path, '.'.join([input_file_stem, 'pkl'])))
+                gl.dump_pickle(sm.mysumstats, output_path, overwrite=params['overwrite'])
+            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv"]:
+                output_path = str(Path(workspace_path, input_file_stem))
+                sm.mysumstats.to_format(output_path, **gl_params)
+            elif step == 'write_same_input_format':
+                output_path = str(Path(workspace_path, input_file_stem))
+                sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
+            elif step == 'qq_manhattan_plots':
+                output_path = str(
+                    Path(workspace_path, '.'.join([input_file_stem, 'png'])))
+                cut = round(-np.log10(gl_params['sig_level'])) + params['dist']
+                sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
+            elif step == 'cistrans_annotation':
+                cistrans_gene_tagger(params, workspace_path)
         else:
             logger.info(f"Skipping {step} step")
 

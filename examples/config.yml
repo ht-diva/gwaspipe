@@ -9,10 +9,11 @@ run_sequence: !!omap
   - 3: 'infer_build'
   - 4: 'harmonize'
   - 5: 'report_inflation_factors'
-  - 6: 'write_ldsc'
-  - 7: 'qq_manhattan_plots'
-  - 8: 'write_metal'
-  - 9: 'write_regenie'
+  - 6: 'qq_manhattan_plots'
+  - 7: 'write_pickle'
+  - 8: 'write_ldsc'
+  - 9: 'write_metal'
+  - 10: 'write_regenie'
 
 steps:
   basic_check: # see https://cloufield.github.io/gwaslab/Standardization/
@@ -90,6 +91,11 @@ steps:
       region_buffer_value: 500000
       proximality_threshold: 5000
       columns_to_drop: []
+  write_pickle:
+    params:
+      run: True
+      overwrite: False
+      workspace: "pickle"
   write_same_input_format:
     params:
       run: False
