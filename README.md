@@ -14,3 +14,11 @@ e.g.: `python src/gwaspipe.py -c examples/config_ldscore_pipe.yml -i ./data/seq.
 Input format can be: regenie, fastgwa, ldsc, fuma
 
 There are some example configuration files in the [examples](examples) directory.
+
+## Reference data
+
+Genome:
+[Genome assembly GRCh37.p13](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001405.25/)
+
+VCF file with allele frequency information for inferring strand and comparing allele frequency:
+[1kg_eur_hg19](https://cloufield.github.io/gwaslab/Download/)
