@@ -119,6 +119,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
             elif step == 'cistrans_annotation':
                 cistrans_gene_tagger(params, workspace_path)
+            logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
 
