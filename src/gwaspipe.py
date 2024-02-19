@@ -60,9 +60,13 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
 
     for step in cm.run_sequence:
         params, gl_params = cm.step(step)
-        run  = params['run']
-        workspace = params['workspace']
-        workspace_path = Path(cm.root_path,workspace)
+        run  = params.get('run', False)
+        ws = params.get('workspace', 'default')
+        ws_subfolder = params.get('workspace_subfolder', False)
+        if ws_subfolder:
+            workspace_path = Path(cm.root_path, ws, input_file_stem)
+        else:
+            workspace_path = Path(cm.root_path, ws)
         workspace_path.mkdir(parents=True, exist_ok=True)
 
         if run:
@@ -85,9 +89,17 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
             elif step == "report_summary":
                 header = f"Summary:"
                 summary = sm.mysumstats.summary().to_string()
+                print(summary)
                 # with open(report_if_file_path, "a") as fp:
                 #     fp.write(header)
                 #     fp.write(summary)
+            elif step == "report_min_pvalues":
+                nrows = params['nrows']
+                df = sm.mysumstats.data.nsmallest(nrows, 'P', keep="all")
+                df.drop(columns=['STATUS'], inplace=True)
+                output_path = str(
+                    Path(workspace_path, '.'.join([input_file_stem, 'nsmallest.tsv'])))
+                df.to_csv(output_path, sep='\t')
             elif step == "report_inflation_factors":
                 df = sm.mysumstats.data
                 CHISQ = df.Z**2
@@ -106,7 +118,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 output_path = str(
                     Path(workspace_path, '.'.join([input_file_stem, 'pkl'])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params['overwrite'])
-            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv"]:
+            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv", "write_fastgwa"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == 'write_same_input_format':
