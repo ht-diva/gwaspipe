@@ -118,7 +118,19 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 output_path = str(
                     Path(workspace_path, '.'.join([input_file_stem, 'pkl'])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params['overwrite'])
-            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_vcf", "write_tsv", "write_fastgwa"]:
+            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa"]:
+                output_path = str(Path(workspace_path, input_file_stem))
+                sm.mysumstats.to_format(output_path, **gl_params)
+            elif step == 'write_vcf':
+                if params.get('study_name_mask') == "*.*.*.skip":
+                    study_name = '.'.join(input_file_stem.split('.')[:3])
+                elif params.get('study_name_mask') == "*.ignore_from_here":
+                    study_name = '.'.join(input_file_stem.split('.')[:1])
+                else:
+                    study_name = input_file_stem
+                sm.mysumstats.meta["gwaslab"][
+                    "study_name"] = study_name
+                sm.mysumstats.infer_build()
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == 'write_same_input_format':
