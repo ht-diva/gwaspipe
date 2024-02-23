@@ -1,3 +1,6 @@
+import monkeypatcher
+monkeypatcher.apply_monkeypatch(verbose=False) # must be done before importing gwaslab!
+
 from pathlib import Path
 
 import numpy as np
