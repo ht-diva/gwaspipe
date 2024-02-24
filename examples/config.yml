@@ -92,10 +92,10 @@ steps:
       genepos_file_genecol_name: "GENE_NAME"
       gwas_files_dir: "path/to/cojo/or/clump/files"
       prot_id_column_name: "SeqId"
-      pval_column: "P"
+      pval_column: "MLOG10P" # change with actual name of -log10p column
       snp_file_pos_col: "POS"
       snp_file_chrom_col: "#CHROM"
-      pvalue_threshold: 5e-8
+      pvalue_threshold: 7.30102 # -log10 of 5e-8
       region_buffer_value: 500000
       proximality_threshold: 5000
       columns_to_drop: []
