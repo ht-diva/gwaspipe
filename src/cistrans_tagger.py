@@ -2,15 +2,11 @@ import pandas as pd
 import os
 import glob
 import json
-import mpmath  
 import logging
 import warnings
 import pybedtools
 
 
-# Function to transform strings to numbers using mpmath
-def to_mpf(x):
-    return mpmath.mpf(x)
     
 # Clear screen function
 def clear_screen():
@@ -64,8 +60,7 @@ def cistrans_gene_tagger(params, output_path):
     seqid_list = map_df[params['prot_id_column_name']].unique()
 
     # column types needed for safe loading of results
-    column_types = {params['snp_file_chrom_col']: str,
-                    params['pval_column']: str}
+    column_types = {params['snp_file_chrom_col']: str}
 
     # Initialize an empty DataFrame for appending results
     all_snps_combined_df = pd.DataFrame()
@@ -99,12 +94,10 @@ def cistrans_gene_tagger(params, output_path):
                         file_suffix = '_clump'
                         
                     snp_df = pd.read_csv(file, sep="\t", dtype=column_types)
-
-                    # transform strings to numbers
-                    snp_df[params['pval_column']] = snp_df[params['pval_column']].apply(to_mpf)
-
+                
                     # Apply P-value threshold filter
-                    snp_df = snp_df[snp_df[params['pval_column']] < params['pvalue_threshold']]
+                    # supposed to work with -log10(pvalue)
+                    snp_df = snp_df[snp_df[params['pval_column']] > params['pvalue_threshold']]
 
                     # Determine cis/trans
                     on_same_chrom = snp_df[params['snp_file_chrom_col']] == target_chrom
