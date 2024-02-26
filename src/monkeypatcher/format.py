@@ -29,9 +29,7 @@ def tofmt(sumstats,
           no_status=False,
           log=Log(),
           to_csvargs=None):
-    
-    print("+++++++++++++CUSTOM TOFMT+++++++++++++++++")
-    
+       
     if to_csvargs is None:
         to_csvargs=dict()
     
@@ -176,9 +174,9 @@ def tofmt(sumstats,
         log.write(" -Writing sumstats to: {}...".format(path),verbose=verbose)
 
         try:
-            fast_to_csv(sumstats, path, compress=True)
+            fast_to_csv(sumstats, path, to_csvargs=to_csvargs, compress=True)
         except:
-            sumstats.to_csv(path, index=None,**to_csvargs)
+            sumstats.to_csv(path, index=None, **to_csvargs)
 
         if md5sum == True: 
             md5_value = md5sum_file(path,log,verbose)
@@ -191,27 +189,40 @@ def tofmt(sumstats,
         return sumstats  
     
 
-def fast_to_csv(dataframe, path, compress=True):
+def fast_to_csv(dataframe, path, to_csvargs=None, compress=True):
+        df_numpy = dataframe.to_numpy()
+
         if path.endswith(".gz"):
             tsv_path = path[:-3]
         else:
             tsv_path = path
 
+        if to_csvargs is None:
+            to_csvargs = {}
+
+        if 'sep' in to_csvargs:
+            sep = to_csvargs['sep']
+        else:
+            sep = '\t'
+
+        if 'na_rep' in to_csvargs:
+            df_numpy[pd.isna(df_numpy)] = to_csvargs['na_rep'] # replace NaNs. We have to use pd.isna because np.isnan does not work with 'object' and 'string' dtypes
+
         # np.savetext() is faster than df.to_csv, however it loops through the rows of X and formats each row individually:
         # https://github.com/numpy/numpy/blob/d35cd07ea997f033b2d89d349734c61f5de54b0d/numpy/lib/npyio.py#L1613
         # We can speed up the process building the whole format string and then appling the formatting in one single call
         with open(tsv_path, 'w') as f:
-            f.write(' '.join(dataframe.columns) + '\n') # header
-            fmt = ' '.join(['%s']*dataframe.shape[1]) # build formatting for one single row
+            f.write(sep.join(dataframe.columns) + '\n') # header
+            fmt = sep.join(['%s']*dataframe.shape[1]) # build formatting for one single row
             fmt = '\n'.join([fmt]*dataframe.shape[0]) # add newline and replicate the formatting for all rows
-            data = fmt % tuple(dataframe.to_numpy().ravel()) # flatten the array and then apply formatting
-            f.write(data + "\n")
+            data = fmt % tuple(df_numpy.ravel()) # flatten the array and then apply formatting
+            f.write(data + '\n')
 
         # gzip tsv
         if compress:
             with open(tsv_path, 'rb') as file:
                 bindata = bytearray(file.read())
-                with gzip.open(tsv_path+".gz", "wb", compresslevel=1) as f:
+                with gzip.open(tsv_path+'.gz', 'wb', compresslevel=1) as f:
                     f.write(bindata)
 
             # delete tsv
