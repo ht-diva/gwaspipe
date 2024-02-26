@@ -133,6 +133,11 @@ steps:
       workspace: "regenie"
     gl_params:
       fmt: "regenie"
+      to_csvargs:
+        compression:
+          method: "gzip"
+          compresslevel: 1
+          mtime: 1
   write_vcf:
     params:
       run: True

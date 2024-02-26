@@ -1,9 +1,17 @@
 import sys
 import os
 
-import gwaslab.hm_harmonize_sumstats
-from .harmonize import fast_checkref
+#import gwaslab.hm_harmonize_sumstats
+#import gwaslab.io_to_formats
+import gwaslab
 
+from .harmonize import fast_checkref
+from .format import tofmt
+
+PATCHES = {
+    gwaslab.hm_harmonize_sumstats.checkref: fast_checkref,
+    gwaslab.io_to_formats.tofmt: tofmt
+}
 
 def find_imports_to_reference(reference_module, verbose=False):
     """
@@ -33,19 +41,39 @@ def find_imports_to_reference(reference_module, verbose=False):
     return list(set(out))
 
 
+def clean_imports(verbose=False):
+    """
+    Deletes some modules from sys.modules to make sure that the new functions are used.
+    """
+    # modules_to_delete = find_imports_to_reference('gwaslab.g_Sumstats', verbose=verbose) # gwaslab.g_Sumstats is the module that originally imports gwaslab.hm_harmonize_sumstats.checkref
+    # modules_to_delete.append('gwaslab') # very important!
+    # modules_to_delete = set([m for m in modules_to_delete if m in sys.modules.keys()])
+
+    # for m in modules_to_delete:
+    #     if verbose: print(f"Deleting module {m}")
+    #     del sys.modules[m]
+
+    to_keep = [
+        'gwaslab.g_Log', 'gwaslab.g_vchange_status', 'gwaslab.bd_config', 'gwaslab.g_version', 'gwaslab.bd_download',
+        'gwaslab.bd_common_data', 'gwaslab.qc_check_datatype', 'gwaslab.util_in_fill_data', 'gwaslab.qc_fix_sumstats', 'gwaslab.hm_harmonize_sumstats',
+        'gwaslab.io_preformat_input', 'gwaslab.bd_get_hapmap3', 'gwaslab.io_to_formats'
+    ]
+    if 'gwaslab' in to_keep: to_keep.remove('gwaslab') # make sure we also delete 'gwaslab' from sys.modules
+
+    for k in sys.modules.copy():
+        if k.startswith('gwaslab') and k not in to_keep:
+            if verbose: print(f"Deleting module {k}")
+            del sys.modules[k]
+
+
 def apply_monkeypatch(verbose=False):
     """
     Overwrite the original functions with the new ones.
     """
 
-    # We need to delete some modules from sys.modules to make sure that the new function is used
-    modules_to_delete = find_imports_to_reference('gwaslab.g_Sumstats', verbose=verbose) # gwaslab.g_Sumstats is the module that originally imports gwaslab.hm_harmonize_sumstats.checkref
-    modules_to_delete.append('gwaslab') # very important!
-    modules_to_delete = [m for m in modules_to_delete if m in sys.modules.keys()]
+    # Clean the imports
+    clean_imports(verbose=verbose)
 
-    for m in modules_to_delete:
-        if verbose: print(f"Deleting module {m}")
-        del sys.modules[m]
-
-    # Overwrite original functions with the new ones
+    # Apply the patches
     gwaslab.hm_harmonize_sumstats.checkref = fast_checkref
+    gwaslab.io_to_formats.tofmt = tofmt

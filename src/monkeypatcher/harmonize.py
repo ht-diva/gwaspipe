@@ -170,10 +170,10 @@ def fast_check_status(sumstats: pd.DataFrame, fasta_records_dict: Dict, log=g_Lo
     # First, convert the fasta records to a single numpy array of integers
     record, starting_positions = build_fasta_records(fasta_records_dict, log=log, verbose=verbose)
 
-    # In _fast_check_status3(), several 2D numpy arrays are created and they are padded to have shape[1] == max_len_nea or max_len_ea
+    # In _fast_check_status(), several 2D numpy arrays are created and they are padded to have shape[1] == max_len_nea or max_len_ea
     # Since most of the NEA and EA strings are short, we perform the check first on the records having short NEA and EA strings,
     # and then we perform the check on the records having long NEA and EA strings. In this way we can speed up the process (since the 
-    # array are smaller) and save memory.
+    # arrays are smaller) and save memory.
     max_len = 4 # this is a chosen value, we could compute it using some stats about the length and count of NEA and EA strings
     condition = (sumstats['NEA'].str.len() <= max_len) * (sumstats['EA'].str.len() <= max_len)
 
