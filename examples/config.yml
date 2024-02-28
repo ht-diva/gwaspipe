@@ -4,16 +4,16 @@ n_cores: &cores 3
 
 # This is an ordered dict that contains the order in which the steps are run.
 run_sequence: !!omap
-#  - 1: 'basic_check'
-#  - 2: 'fill_data'
-#  - 3: 'infer_build'
-#  - 4: 'harmonize'
+  - 1: 'basic_check'
+  - 2: 'fill_data'
+  - 3: 'infer_build'
+  - 4: 'harmonize'
 #  - 5: 'report_inflation_factors'
 #  - 6: 'qq_manhattan_plots'
-  - 7: 'write_vcf'
+  - 7: 'write_pickle'
 #  - 8: 'write_ldsc'
 #  - 9: 'write_metal'
-#  - 10: 'write_regenie'
+  - 10: 'write_regenie'
 
 
 steps:
@@ -138,7 +138,8 @@ steps:
       run: True
       workspace: "vcf"
       workspace_subfolder: True
-      study_name_mask: "*.*.*.ignore_this"
+      study_name_mask: [ True, True, True, False, False, False]
+      study_name_sep: '.'
     gl_params:
       fmt: "vcf"
 

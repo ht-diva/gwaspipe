@@ -122,10 +122,11 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == 'write_vcf':
-                if params.get('study_name_mask') == "*.*.*.skip":
-                    study_name = '.'.join(input_file_stem.split('.')[:3])
-                elif params.get('study_name_mask') == "*.ignore_from_here":
-                    study_name = '.'.join(input_file_stem.split('.')[:1])
+                mask = params.get('study_name_mask', False)
+                sep = params.get('study_name_sep', '.')
+                if mask:
+                    string_list = np.array(input_file_name.split(sep))
+                    study_name = sep.join(string_list[mask].tolist())
                 else:
                     study_name = input_file_stem
                 sm.mysumstats.meta["gwaslab"][
