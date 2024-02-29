@@ -31,10 +31,11 @@ class SumstatsManager:
     type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma", "pickle"], case_sensitive=False),
     help="Input file format",
 )
+@click.option("-o", "--output", help="Path where results should be saved")
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
-def main(config_file, input_file, input_file_format, input_file_separator, quiet):
-    cm = ConfigurationManager(config_file=config_file)
+def main(config_file, input_file, input_file_format, input_file_separator, output, quiet):
+    cm = ConfigurationManager(config_file=config_file, root_path=output)
     log_file = cm.log_file_path
 
     if quiet:
@@ -60,7 +61,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, quiet
 
     for step in cm.run_sequence:
         params, gl_params = cm.step(step)
-        run  = params.get('run', False)
+        run = params.get('run', False)
         ws = params.get('workspace', 'default')
         ws_subfolder = params.get('workspace_subfolder', False)
         if ws_subfolder:
