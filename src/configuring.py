@@ -17,7 +17,7 @@ class SingletonConfigurationManager(type):
 
 
 class ConfigurationManager(metaclass=SingletonConfigurationManager):
-    def __init__(self, config_file=None):
+    def __init__(self, config_file=None, root_path=None):
         self.c = None
         if not isinstance(config_file, Path):
             config_file = Path(config_file)
@@ -28,10 +28,12 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         else:
             msg = f"configuration file {config_file.name} not found"
             exit(msg)
+        self._root_path = root_path
 
     @property
     def root_path(self):
-        path = Path(self.c["root_path"])
+        root_path = self._root_path if self._root_path else self.c["root_path"]
+        path = Path(root_path)
         path.mkdir(exist_ok=True)
         return path
 

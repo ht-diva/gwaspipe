@@ -57,6 +57,7 @@ steps:
   report_inflation_factors:
     params:
       run: True
+      overwrite: False
       workspace: "if"
       workspace_subfolder: True
   report_min_pvalues:
@@ -104,14 +105,23 @@ steps:
       run: True
       overwrite: False
       workspace: "pickle"
+      workspace_subfolder: False
   write_same_input_format:
     params:
       run: False
       workspace: "outputs"
+      workspace_subfolder: True
+    gl_params:
+      to_csvargs:
+        compression:
+          method: "gzip"
+          compresslevel: 1
+          mtime: 1
   write_tsv:
     params:
       run: False
       workspace: "outputs"
+      workspace_subfolder: True
     gl_params:
       fmt: "gwaslab"
   # see https://cloufield.github.io/gwaslab/Format/ for more details on writing options
@@ -119,18 +129,21 @@ steps:
     params:
       run: False
       workspace: "ldsc"
+      workspace_subfolder: True
     gl_params:
       fmt: "ldsc"
   write_metal:
     params:
       run: True
       workspace: "metal"
+      workspace_subfolder: True
     gl_params:
       fmt: "metal"
   write_regenie:
     params:
       run: True
       workspace: "regenie"
+      workspace_subfolder: True
     gl_params:
       fmt: "regenie"
       to_csvargs:
