@@ -69,3 +69,9 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
     def run_sequence(self):
         run_sequence = tuple(self.c["run_sequence"].values())
         return run_sequence
+
+    @property
+    def filename_settings(self):
+        mask = self.c.get('filename_mask', False)
+        sep = self.c.get('filename_sep', '.')
+        return mask, sep
