@@ -49,7 +49,14 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
 
     input_file_path = Path(input_file)
     input_file_name = input_file_path.name
-    input_file_stem = input_file_path.stem
+
+    mask, sep = cm.filename_settings
+    if mask:
+        string_list = np.array(input_file_name.split(sep))
+        input_file_stem = sep.join(string_list[mask].tolist())
+    else:
+        input_file_stem = input_file_path.stem
+
     formatbook_file_path = Path(cm.formatbook_path)
 
     if input_file_path.exists():
@@ -126,13 +133,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == 'write_vcf':
-                mask = params.get('study_name_mask', False)
-                sep = params.get('study_name_sep', '.')
-                if mask:
-                    string_list = np.array(input_file_name.split(sep))
-                    study_name = sep.join(string_list[mask].tolist())
-                else:
-                    study_name = input_file_stem
+                study_name = input_file_stem
                 sm.mysumstats.meta["gwaslab"][
                     "study_name"] = study_name
                 sm.mysumstats.infer_build()

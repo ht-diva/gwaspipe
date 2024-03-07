@@ -21,6 +21,7 @@ steps:
     params:
       run: True
     gl_params:
+      normalize: True
       n_cores: *cores
   infer_build: # see https://cloufield.github.io/gwaslab/InferBuild/
     params:
@@ -41,8 +42,8 @@ steps:
       ref_seq: "data/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"
       ref_infer: "data/EUR.ALL.split_norm_af.1kgp3v5.hg19.vcf.gz"
       ref_alt_freq: "AF"
-      remove: "True"
-      removedup_args: {'mode': "md",'keep': 'first','keep_col': "MLOG10P" }
+      remove: True
+      removedup_args: {'mode': "d",'keep': 'first','keep_col': "MLOG10P" }
   liftover: # see https://cloufield.github.io/gwaslab/LiftOver/
     params:
       run: False
@@ -160,6 +161,10 @@ steps:
       study_name_sep: '.'
     gl_params:
       fmt: "vcf"
+
+# Filename transformation, e.g.: seq.3007.7.gwas.regenie.gz
+filename_mask: [ True, True, True, False, False, False]
+filename_sep: '.'
 
 # IO
 root_path: "results"
