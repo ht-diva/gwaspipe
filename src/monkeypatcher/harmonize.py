@@ -70,6 +70,7 @@ def fast_checkref(sumstats,ref_path,chrom="CHR",pos="POS",ea="EA",nea="NEA",stat
     records = SeqIO.parse(ref_path, "fasta")
 
     all_records_dict = {}
+    chroms_in_sumstats = sumstats[chrom].unique() # load records from Fasta file only for the chromosomes present in the sumstats
     for record in records:
         #record = next(records)
         if record is not None:
@@ -78,7 +79,7 @@ def fast_checkref(sumstats,ref_path,chrom="CHR",pos="POS",ea="EA",nea="NEA",stat
                 i = chr_dict[record_chr]
             else:
                 i = record_chr
-            if i in chromlist:
+            if (i in chromlist) and (i in chroms_in_sumstats):
                 all_records_dict.update({i: record})
 
     # Try to apply the fast implemention, if it fails, fall back to the original implementation 
@@ -136,7 +137,7 @@ def fast_checkref(sumstats,ref_path,chrom="CHR",pos="POS",ea="EA",nea="NEA",stat
     return sumstats
 
 
-def build_fasta_records(fasta_records_dict: Dict, log=g_Log.Log(), verbose=True):
+def build_fasta_records(fasta_records_dict: Dict, pos_as_dict=True, log=g_Log.Log(), verbose=True):
     log.write("   -Building numpy fasta records from dict", verbose=verbose)
 
     # Let's do some magic to convert the fasta record to a numpy array of integers in a very fast way.
@@ -159,6 +160,8 @@ def build_fasta_records(fasta_records_dict: Dict, log=g_Log.Log(), verbose=True)
     # to index the record array depending on the position of the variant and the chromosome
     records_len = np.array([len(r) for r in all_r])
     starting_positions = np.cumsum(records_len) - records_len
+    if pos_as_dict:
+        starting_positions = {k: v for k, v in zip(fasta_records_dict.keys(), starting_positions)}
     record = np.concatenate(all_r)
     del all_r # free memory
 
@@ -167,27 +170,43 @@ def build_fasta_records(fasta_records_dict: Dict, log=g_Log.Log(), verbose=True)
 
 def fast_check_status(sumstats: pd.DataFrame, fasta_records_dict: Dict, log=g_Log.Log(), verbose=True):
 
+    chrom,pos,ea,nea,status = sumstats.columns
+
     # First, convert the fasta records to a single numpy array of integers
-    record, starting_positions = build_fasta_records(fasta_records_dict, log=log, verbose=verbose)
+    record, starting_positions_dict = build_fasta_records(fasta_records_dict, pos_as_dict=True, log=log, verbose=verbose)
 
     # In _fast_check_status(), several 2D numpy arrays are created and they are padded to have shape[1] == max_len_nea or max_len_ea
     # Since most of the NEA and EA strings are short, we perform the check first on the records having short NEA and EA strings,
     # and then we perform the check on the records having long NEA and EA strings. In this way we can speed up the process (since the 
     # arrays are smaller) and save memory.
     max_len = 4 # this is a chosen value, we could compute it using some stats about the length and count of NEA and EA strings
-    condition = (sumstats['NEA'].str.len() <= max_len) * (sumstats['EA'].str.len() <= max_len)
+    condition = (sumstats[nea].str.len() <= max_len) * (sumstats[ea].str.len() <= max_len)
 
     log.write(f"   -Checking records for ( len(NEA) <= {max_len} and len(EA) <= {max_len} )", verbose=verbose)
-    sumstats.loc[condition, 'STATUS'] = _fast_check_status(sumstats[condition], record=record, starting_positions=starting_positions)
+    sumstats_cond = sumstats[condition]
+    starting_pos_cond = np.array([starting_positions_dict[k] for k in sumstats_cond[chrom].unique()])
+    sumstats.loc[condition, status] = _fast_check_status(sumstats_cond, record=record, starting_positions=starting_pos_cond)
 
     log.write(f"   -Checking records for ( len(NEA) > {max_len} or len(EA) > {max_len} )", verbose=verbose)
-    sumstats.loc[~condition, 'STATUS'] = _fast_check_status(sumstats[~condition], record=record, starting_positions=starting_positions)
+    sumstats_not_cond = sumstats[~condition]
+    starting_not_pos_cond = np.array([starting_positions_dict[k] for k in sumstats_not_cond[chrom].unique()])
+    sumstats.loc[~condition, status] = _fast_check_status(sumstats_not_cond, record=record, starting_positions=starting_not_pos_cond)
 
-    return sumstats['STATUS'].values
+    return sumstats[status].values
 
 
 def _fast_check_status(x: pd.DataFrame, record: np.array, starting_positions: np.array):
-
+    # status 
+    #0 /  ----->  match
+    #1 /  ----->  Flipped Fixed
+    #2 /  ----->  Reverse_complementary Fixed
+    #3 /  ----->  flipped
+    #4 /  ----->  reverse_complementary 
+    #5 / ------>  reverse_complementary + flipped
+    #6 /  ----->  both allele on genome + unable to distinguish
+    #7 /  ----> reverse_complementary + both allele on genome + unable to distinguish
+    #8 / -----> not on ref genome
+    #9 / ------> unchecked
     if x.empty:
         return np.array([])
     
@@ -282,13 +301,14 @@ def _fast_check_status(x: pd.DataFrame, record: np.array, starting_positions: np
     # Modify indices to select the correct absolute position in the concatenated record array
     indices = indices + modified_indices
 
+    # Let's pad the fasta records array because if there is a (pos, chrom) for which (pos+starting_position[chrom]+max_len_nea > len(record) we get out of bounds error.
+    # This basically happens if there is a pos for the last chromosome for which pos+max_len_nea > len(record for that chrom).
+    # This is very unlikely to happen but we should handle this case.
+    record = np.pad(record, (0, max_len_nea), constant_values=PADDING_VALUE)
+    
     # Index the record array using the computed indices.
     # Since we use np.take, indices must all have the same length, and this is why we added the padding to NEA
     # and we create the indices using max_len_nea (long story short, we can't obtain a scattered/ragged array)
-    # TODO: bug if there is a (pos, chrom) for which (pos+starting_position[chrom]+max_len_nea > len(record) (out of bounds error).
-    # This basically happens if the there is a pos for the last chromosome for which pos+max_len_nea > len(record for that chrom). This is unlikely to happen
-    # but we should handle this case. For now, if this happens, the function will raise an exception which will be caught
-    # by the caller and we will fall back to the original check_status() gwaslab implementation
     output_nea = np.take(record, indices)
 
     # Check if the NEA is equal to the reference sequence at the given position
