@@ -36,6 +36,7 @@ steps:
   harmonize: # see https://cloufield.github.io/gwaslab/Harmonization/
     params:
       run: True
+      preload_cache: False
     gl_params:
       basic_check: False
       n_cores: *cores
@@ -44,6 +45,7 @@ steps:
       ref_alt_freq: "AF"
       remove: True
       removedup_args: {'mode': "d",'keep': 'first','keep_col': "MLOG10P" }
+      inferstrand_args: {'cache_options': {'use_cache': False}} # if set to False but preload_cache is True, the (preloaded) cache will be used anyway
   liftover: # see https://cloufield.github.io/gwaslab/LiftOver/
     params:
       run: False
@@ -162,7 +164,7 @@ filename_mask: [ True, True, True, False, False, False]
 filename_sep: '.'
 
 # IO
-root_path: "results"
+root_path: "results_orig"
 log_filename: "gwaspipe.log"
 report_if_filename: "report_if_placeholder.txt"
 formatbook_path: " "     # fill this var if you want to provide a custom formatbook
