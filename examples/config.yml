@@ -36,6 +36,7 @@ steps:
   harmonize: # see https://cloufield.github.io/gwaslab/Harmonization/
     params:
       run: True
+      flip_allele: False
     gl_params:
       basic_check: False
       n_cores: *cores

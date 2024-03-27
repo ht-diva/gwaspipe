@@ -91,16 +91,17 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
                 sm.mysumstats.harmonize(**gl_params)
-                sm.mysumstats.flip_allele_stats()
+                if params.get('flip_allele', False):
+                    sm.mysumstats.flip_allele_stats()
             elif step =="liftover":
                 sm.mysumstats.liftover(**gl_params)
-            elif step == "report_summary":
-                header = f"Summary:"
-                summary = sm.mysumstats.summary().to_string()
-                print(summary)
-                # with open(report_if_file_path, "a") as fp:
-                #     fp.write(header)
-                #     fp.write(summary)
+            elif step == "report_harmonization_summary":
+                summary = sm.mysumstats.lookup_status().to_string()
+                output_path = str(
+                    Path(workspace_path,
+                         '.'.join([input_file_stem, 'harmonization_summary.tsv'])))
+                with open(output_path, "w") as fp:
+                    fp.write(summary)
             elif step == "report_min_pvalues":
                 nrows = params['nrows']
                 df = sm.mysumstats.data.nsmallest(nrows, 'P', keep="all")
