@@ -515,6 +515,24 @@
         "meta_data": {
             "format_name": "gwaslab",
             "format_source": "https://cloufield.github.io/gwaslab/",
+            "format_col_order": [
+                "rsID",
+                "SNPID",
+                "CHR",
+                "POS",
+                "NEA",
+                "EA",
+                "EAF",
+                "N",
+                "BETA",
+                "SE",
+                "P",
+                "MLOG10P",
+                "INFO",
+                "Z",
+                "CHISQ",
+                "STATUS"
+            ],
             "format_version": "20231220_v4"
         },
         "format_dict": {
@@ -524,6 +542,7 @@
             "POS": "POS",
             "NEA": "NEA",
             "EA": "EA",
+            "EAF": "EAF",
             "N": "N",
             "BETA": "BETA",
             "SE": "SE",
