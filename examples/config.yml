@@ -37,6 +37,7 @@ steps:
     params:
       run: True
       preload_cache: True
+      flip_allele: False
     gl_params:
       basic_check: False
       n_cores: *cores
