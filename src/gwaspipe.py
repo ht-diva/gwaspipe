@@ -78,7 +78,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 NUM_WORKERS = cm.c.get('n_cores', None) or int(os.environ.get("SLURM_CPUS_PER_TASK", 1)) # default to 1 if not set. It is used only if cache has to be built
                 ref_alt_freq = gl_params.get('ref_alt_freq', None)
                 base_path = gl_params['ref_infer']
-                cache_process = gl.cache_manager.CacheProcess(base_path, ref_alt_freq=ref_alt_freq, n_cores=NUM_WORKERS, log=sm.mysumstats.log, verbose=True)
+                cache_process = gl.cache_manager.CacheProcess(base_path, ref_alt_freq=ref_alt_freq, category=gl.cache_manager.PALINDROMIC_INDEL, n_cores=NUM_WORKERS, log=sm.mysumstats.log, verbose=True)
                 cache_process.start()
                 #cache_manager = gl.cache_manager.CacheManager(cache_process=cache_process)
 
