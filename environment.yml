@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python<=3.10
-  - pip==23.3.2
+  - pip==24
   - mscorefonts
   - pip:
       - gwaslab==3.4.43
@@ -14,5 +14,4 @@ dependencies:
       - click==8.1.7
       - loguru==0.7.2
       - cloup==3.0.4
-      - mpmath==1.3.0
       - pybedtools==0.9.1
