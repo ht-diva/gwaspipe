@@ -36,6 +36,7 @@ steps:
   harmonize: # see https://cloufield.github.io/gwaslab/Harmonization/
     params:
       run: True
+      preload_cache: True
       flip_allele: False
     gl_params:
       basic_check: False
@@ -45,6 +46,7 @@ steps:
       ref_alt_freq: "AF"
       remove: True
       removedup_args: {'mode': "d",'keep': 'first','keep_col': "MLOG10P" }
+      inferstrand_args: {'cache_options': {'use_cache': True}} # if set to False but preload_cache is True, the (preloaded) cache will be used anyway
   liftover: # see https://cloufield.github.io/gwaslab/LiftOver/
     params:
       run: False

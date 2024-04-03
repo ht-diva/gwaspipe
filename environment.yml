@@ -7,7 +7,7 @@ dependencies:
   - pip==23.3.2
   - mscorefonts
   - pip:
-      - gwaslab==3.4.38
+      - gwaslab==3.4.43
       - pandas==2.2
       - pyarrow==15.0
       - ruamel.yaml==0.18.5

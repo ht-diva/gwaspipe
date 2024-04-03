@@ -66,6 +66,26 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
         msg = f"{input_file_path} input file not found"
         exit(msg)
 
+    # Setup cache if needed
+    if 'harmonize' in cm.run_sequence:
+        params, gl_params = cm.step('harmonize')
+        run = params.get('run', False)
+        preload_cache = params.get('preload_cache', False)
+        if run and preload_cache:
+            if 'ref_infer' in gl_params:
+                NUM_WORKERS = cm.c.get('n_cores', None) or int(os.environ.get("SLURM_CPUS_PER_TASK", 1)) # default to 1 if not set. It is used only if cache has to be built
+                ref_alt_freq = gl_params.get('ref_alt_freq', None)
+                base_path = gl_params['ref_infer']
+                cache_process = gl.cache_manager.CacheProcess(base_path, ref_alt_freq=ref_alt_freq, category=gl.cache_manager.PALINDROMIC_INDEL, n_cores=NUM_WORKERS, log=sm.mysumstats.log, verbose=True)
+                cache_process.start()
+
+                # Add cache options to inferstrand_args               
+                inferstrand_args = gl_params.get('inferstrand_args', {})
+                cache_options = inferstrand_args.get('cache_options', {})
+                cache_options.update({'cache_process': cache_process})
+                inferstrand_args.update({'cache_options': cache_options})
+                gl_params['inferstrand_args'] = inferstrand_args
+
     for step in cm.run_sequence:
         params, gl_params = cm.step(step)
         run = params.get('run', False)
