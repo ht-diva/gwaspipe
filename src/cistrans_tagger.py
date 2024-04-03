@@ -37,7 +37,7 @@ def batch_annotate_trans_snps(trans_snps_df, genes_bed, params):
     # Annotate with nearest gene in batch
     closest_genes = trans_snps_bed.closest(genes_bed, d=True).to_dataframe()
     
-    return closest_genes[param['gene_file_colname']]
+    return closest_genes[params['gene_file_colname']]
 
 # helper function to create BED file from DataFrame for pybedtools
 def df_to_bed(df, chrom_col, start_col, end_col, name_col=None):
