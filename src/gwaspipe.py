@@ -110,7 +110,17 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
             elif step == "fill_data":
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
-                sm.mysumstats.harmonize(**gl_params)
+                ref_path = gl_params.get('ref_seq')
+                ref_infer = gl_params.get('ref_infer')
+                ref_alt_freq = gl_params.get('ref_alt_freq', None)
+                n_cores = gl_params.get('n_cores', 1)
+
+                if Path(ref_path).exists():
+                    sm.mysumstats.check_ref(ref_seq=ref_path)
+                if Path(ref_infer).exists():
+                    sm.mysumstats.infer_strand(n_cores=n_cores, ref_infer=ref_infer,
+                                               ref_alt_freq=ref_alt_freq)
+                #sm.mysumstats.harmonize(**gl_params)
                 if params.get('flip_allele', False):
                     sm.mysumstats.flip_allele_stats()
             elif step =="liftover":
