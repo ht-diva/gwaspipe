@@ -117,12 +117,15 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
 
                 if Path(ref_path).exists():
                     sm.mysumstats.check_ref(ref_seq=ref_path)
+                    if params.get('flip_allele', False):
+                        sm.mysumstats.flip_allele_stats()
                 if Path(ref_infer).exists():
                     sm.mysumstats.infer_strand(n_cores=n_cores, ref_infer=ref_infer,
                                                ref_alt_freq=ref_alt_freq)
+                    if params.get('flip_allele', False):
+                        sm.mysumstats.flip_allele_stats()
                 #sm.mysumstats.harmonize(**gl_params)
-                if params.get('flip_allele', False):
-                    sm.mysumstats.flip_allele_stats()
+
             elif step =="liftover":
                 sm.mysumstats.liftover(**gl_params)
             elif step == "report_harmonization_summary":
