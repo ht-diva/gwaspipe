@@ -516,10 +516,10 @@
             "format_name": "gwaslab",
             "format_source": "https://cloufield.github.io/gwaslab/",
             "format_col_order": [
-                "rsID",
-                "SNPID",
                 "CHR",
                 "POS",
+                "rsID",
+                "SNPID",
                 "NEA",
                 "EA",
                 "EAF",
