@@ -120,13 +120,17 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                          '.'.join([input_file_stem, 'harmonization_summary.tsv'])))
                 with open(output_path, "w") as fp:
                     fp.write(summary)
-            elif step == "report_min_pvalues":
-                nrows = params['nrows']
-                df = sm.mysumstats.data.nsmallest(nrows, 'P', keep="all")
-                df.drop(columns=['STATUS'], inplace=True)
+            elif step == "report_min_pvalue":
+                nrows = params.get('nrows', 1)
+                df = sm.mysumstats.data.nlargest(nrows, 'MLOG10P',
+                                                 keep="first").reset_index(drop=True)
+                snpid = df.at[0, "SNPID"]
+                mlog10p = df.at[0, "MLOG10P"]
                 output_path = str(
-                    Path(workspace_path, '.'.join([input_file_stem, 'nsmallest.tsv'])))
-                df.to_csv(output_path, sep='\t')
+                    Path(workspace_path, '.'.join([input_file_stem, 'nlargest.txt'])))
+                with open(output_path, "w") as fp:
+                    fp.write("input_file\tSNPID\tMLOG10P\n")
+                    fp.write(f"{input_file_name}\t{snpid}\t{mlog10p}\n")
             elif step == "report_inflation_factors":
                 df = sm.mysumstats.data
                 CHISQ = df.Z**2
@@ -134,13 +138,11 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 mean_chisq = str(round(CHISQ.mean(), 3))
                 lambda_GC = str(round(CHISQ.median() / 0.4549, 3))
 
-                report_if_file_path = Path(
-                    workspace_path,
-                    cm.report_if_filename.replace("placeholder", input_file_stem)
-                )
-                with open(report_if_file_path, "w") as fp:
-                    fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
-                    fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
+                output_path = str(
+                    Path(workspace_path, '.'.join([input_file_stem, 'if.txt'])))
+                with open(output_path, "w") as fp:
+                    fp.write("input_file\tlambda_GC\tmean_chisq\tmax_chisq\n")
+                    fp.write(f"{input_file_name}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
             elif step == "sort_alphabetically":
                 n_cores = gl_params.get('n_cores', 1)
                 sm.mysumstats.order_alleles(n_cores=n_cores)
