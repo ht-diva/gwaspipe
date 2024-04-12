@@ -14,6 +14,7 @@ run_sequence: !!omap
 #  - 8: 'write_ldsc'
 #  - 9: 'write_metal'
   - 10: 'write_regenie'
+  - 11: "sort_alphabetically"
 
 
 steps:
@@ -159,6 +160,11 @@ steps:
       study_name_sep: '.'
     gl_params:
       fmt: "vcf"
+  sort_alphabetically:
+    params:
+      run: True
+    gl_params:
+      n_cores: *cores
 
 # Filename transformation, e.g.: seq.3007.7.gwas.regenie.gz
 filename_mask: [ True, True, True, False, False, False]

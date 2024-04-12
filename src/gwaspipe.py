@@ -110,22 +110,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
             elif step == "fill_data":
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
-                ref_path = gl_params.get('ref_seq')
-                ref_infer = gl_params.get('ref_infer')
-                ref_alt_freq = gl_params.get('ref_alt_freq', None)
-                n_cores = gl_params.get('n_cores', 1)
-
-                if Path(ref_path).exists():
-                    sm.mysumstats.check_ref(ref_seq=ref_path)
-                    if params.get('flip_allele', False):
-                        sm.mysumstats.flip_allele_stats()
-                if Path(ref_infer).exists():
-                    sm.mysumstats.infer_strand(n_cores=n_cores, ref_infer=ref_infer,
-                                               ref_alt_freq=ref_alt_freq)
-                    if params.get('flip_allele', False):
-                        sm.mysumstats.flip_allele_stats()
-                #sm.mysumstats.harmonize(**gl_params)
-
+                sm.mysumstats.harmonize(**gl_params)
             elif step =="liftover":
                 sm.mysumstats.liftover(**gl_params)
             elif step == "report_harmonization_summary":
@@ -156,6 +141,9 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 with open(report_if_file_path, "w") as fp:
                     fp.write("input_file_path\tlambda_GC\tmean_chisq\tmax_chisq\n")
                     fp.write(f"{input_file_path}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
+            elif step == "sort_alphabetically":
+                n_cores = gl_params.get('n_cores', 1)
+                sm.mysumstats.order_alleles(n_cores=n_cores)
             elif step == 'write_pickle':
                 output_path = str(
                     Path(workspace_path, '.'.join([input_file_stem, 'pkl'])))

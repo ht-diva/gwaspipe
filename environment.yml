@@ -7,7 +7,7 @@ dependencies:
   - pip==24
   - mscorefonts
   - pip:
-      - gwaslab==3.4.43
+      - git+https://github.com/ht-diva/gwaslab.git@order_alleles
       - pandas==2.2
       - pyarrow==15.0
       - ruamel.yaml==0.18.5
