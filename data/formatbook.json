@@ -64,7 +64,7 @@
             "MaxFreq": "MAXF",
             "Effect": "BETA",
             "StdErr": "SE",
-            "log(P)": "MLOG10P",
+            "log(P)": "LOG10P",
             "Direction": "DIRECTION",
             "HetISq": "HETISQ",
             "HetChiSq": "HETCHISQ",
