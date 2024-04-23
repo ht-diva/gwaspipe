@@ -1,4 +1,15 @@
 {
+    "snp_mapping": {
+        "meta_data": {
+            "format_name": "snp_mapping",
+            "format_source": "",
+            "format_version": "20240423"
+        },
+        "format_dict": {
+            "SNPID": "SNPID",
+            "PREVIOUS_ID": "PREVIOUS_ID"
+        }
+    },
     "metal": {
         "meta_data": {
             "format_name": "metal",
@@ -14,6 +25,52 @@
             "StdErr": "SE",
             "P-value": "P",
             "Direction": "DIRECTION"
+        }
+    },
+    "metal_het": {
+        "meta_data": {
+            "format_name": "metal_het",
+            "format_source": "https://genome.sph.umich.edu/wiki/METAL_Documentation",
+            "format_version": "20240422",
+            "format_col_order": [
+                "Chromosome",
+                "Position",
+                "MarkerName",
+                "Allele1",
+                "Allele2",
+                "Freq1",
+                "FreqSE",
+                "MinFreq",
+                "MaxFreq",
+                "Effect",
+                "StdErr",
+                "log(P)",
+                "Direction",
+                "HetISq",
+                "HetChiSq",
+                "logHetP",
+                "TotalSampleSize"
+            ]
+        },
+        "format_dict": {
+            "Chromosome": "CHR",
+            "Position": "POS",
+            "MarkerName": "SNPID",
+            "Allele1": "EA",
+            "Allele2": "NEA",
+            "Freq1": "EAF",
+            "FreqSE": "SEF",
+            "MinFreq": "MINF",
+            "MaxFreq": "MAXF",
+            "Effect": "BETA",
+            "StdErr": "SE",
+            "log(P)": "MLOG10P",
+            "Direction": "DIRECTION",
+            "HetISq": "HETISQ",
+            "HetChiSq": "HETCHISQ",
+            "HetDf": "HETDF",
+            "logHetP": "LHETP",
+            "TotalSampleSize": "N"
         }
     },
     "gwascatalog_hm": {

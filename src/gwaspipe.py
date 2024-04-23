@@ -19,6 +19,7 @@ class SumstatsManager:
         else:
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format,
                                           sep=input_separator)
+        self.mysumstats.data['PREVIOUS_ID'] = self.mysumstats.data['SNPID']
 
 
 @click.command()
@@ -28,7 +29,7 @@ class SumstatsManager:
     "-f",
     "--input_file_format",
     required=True,
-    type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma", "pickle"], case_sensitive=False),
+    type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False),
     help="Input file format",
 )
 @click.option("-o", "--output", help="Path where results should be saved")
@@ -99,7 +100,10 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
 
         if run:
             logger.info(f"Started {step} step")
-            if step == "basic_check":
+            if step == "write_snp_mapping":
+                output_path = str(Path(workspace_path, input_file_stem))
+                sm.mysumstats.to_format(output_path, **gl_params)
+            elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
