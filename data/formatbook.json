@@ -48,6 +48,7 @@
                 "Direction",
                 "HetISq",
                 "HetChiSq",
+                "HetDf",
                 "logHetP",
                 "TotalSampleSize"
             ]
