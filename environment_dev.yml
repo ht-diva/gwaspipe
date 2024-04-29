@@ -1,0 +1,9 @@
+name: gwaspipe
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pre-commit=3.7
+  - black=24.4
+  - flake8=7
+  - isort=5.13

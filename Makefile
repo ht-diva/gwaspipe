@@ -10,3 +10,14 @@ clean:
 
 dependencies:
 	conda env update --file environment.yml
+
+dev-dependencies: dependencies
+	conda env update --file environment_dev.yml
+
+pre-commit:
+	if [ ! -f .git/hooks/pre-commit ]; then pre-commit install; fi
+	pre-commit run --all-files
+
+test:
+	@echo "Testing"
+	python -m unittest discover -s tests
