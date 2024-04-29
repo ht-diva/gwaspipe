@@ -10,68 +10,65 @@ class SingletonConfigurationManager(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(SingletonConfigurationManager, cls).__call__(
-                *args, **kwargs
-            )
+            cls._instances[cls] = super(SingletonConfigurationManager, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
 class ConfigurationManager(metaclass=SingletonConfigurationManager):
-    def __init__(self, config_file=None, root_path=None):
-        self.c = None
-        if not isinstance(config_file, Path):
-            config_file = Path(config_file)
-        if config_file.exists():
-            yaml = YAML(typ="safe")
-            with open(config_file, "r") as file:
-                self.c = yaml.load(file)
-        else:
-            msg = f"configuration file {config_file.name} not found"
-            exit(msg)
-        self._root_path = root_path
+    def __init__(self, config_file: Path | str = None, root_path: Path | str = None):
+        self.config = None
+        config_path = Path(config_file) if config_file else None
+        if config_path:
+            if config_path.exists():
+                yaml = YAML(typ="safe")
+                with open(config_file, "r") as file:
+                    self.config = yaml.load(file)
+            else:
+                msg = (
+                    f"Configuration file {config_path.name} not found"
+                    if config_path
+                    else "No configuration file provided"
+                )
+                raise FileNotFoundError(msg)
+        self._root_path = Path(root_path) if root_path else None
 
     @property
     def root_path(self):
-        root_path = self._root_path if self._root_path else self.c["root_path"]
+        root_path = self._root_path or self.config["root_path"]
         path = Path(root_path)
-        path.mkdir(exist_ok=True)
+        path.parent.mkdir(exist_ok=True)
         return path
 
     @property
     def log_file_path(self):
-        return Path(self.root_path, self.c["log_filename"])
-
-    @property
-    def report_if_filename(self):
-        return self.c["report_if_filename"]
+        return Path(self.root_path, self.config["log_filename"])
 
     @property
     def formatbook_path(self):
-        return self.c["formatbook_path"]
+        return self.config["formatbook_path"]
 
     @property
     def steps(self):
-        return self.c["steps"].keys()
+        return self.config.get("steps", {})
 
-    def step(self, name):
-        # use get method with default values
-        params = self.c["steps"].get(name, {}).get("params", {"run": False,
-                                                              "workspace": ""})
-        for k,v in [('run', False), ('workspace', '')]:
-            if k not in params.keys():
-                params[k] = v
+    def step(self, step_name):
+        # Get the step configuration with default parameters
+        step_config = self.steps.get(step_name, {})
+        default_params = {"run": False, "workspace": ""}
+        params = {**default_params, **step_config.get("params", {})}
 
-        gl_params = self.c["steps"].get(name, {}).get("gl_params", {})
+        # Get the GL parameters if available
+        gl_params = step_config.get("gl_params", {})
 
         return params, gl_params
 
     @property
     def run_sequence(self):
-        run_sequence = tuple(self.c["run_sequence"].values())
+        run_sequence = tuple(self.config.get("run_sequence", {}).values())
         return run_sequence
 
     @property
     def filename_settings(self):
-        mask = self.c.get('filename_mask', False)
-        sep = self.c.get('filename_sep', '.')
+        mask = self.config.get("filename_mask", [True, False])
+        sep = self.config.get("filename_sep", ".")
         return mask, sep

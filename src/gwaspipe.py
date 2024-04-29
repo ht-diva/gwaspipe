@@ -1,11 +1,11 @@
+import os
 from pathlib import Path
 
-import numpy as np
 import click
 import gwaslab as gl
-import cistrans_tagger
-from cistrans_tagger import *
+import numpy as np
 
+from cistrans_tagger import cistrans_gene_tagger
 from configuring import ConfigurationManager
 from utils import __appname__, logger
 
@@ -14,12 +14,11 @@ class SumstatsManager:
     def __init__(self, input_path, input_format, input_separator, formatbook_path):
         if formatbook_path.exists():
             gl.options.set_option("formatbook", str(formatbook_path))
-        if input_format == 'pickle':
+        if input_format == "pickle":
             self.mysumstats = gl.load_pickle(input_path)
         else:
-            self.mysumstats = gl.Sumstats(input_path, fmt=input_format,
-                                          sep=input_separator)
-        self.mysumstats.data['PREVIOUS_ID'] = self.mysumstats.data['SNPID']
+            self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
+        self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"]
 
 
 @click.command()
@@ -58,40 +57,45 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
     formatbook_file_path = Path(cm.formatbook_path)
 
     if input_file_path.exists():
-        sm = SumstatsManager(
-            input_file_path.as_posix(), input_file_format,
-            input_file_separator,
-            formatbook_file_path
-        )
+        sm = SumstatsManager(input_file_path.as_posix(), input_file_format, input_file_separator, formatbook_file_path)
     else:
         msg = f"{input_file_path} input file not found"
         exit(msg)
 
     # Setup cache if needed
-    if 'harmonize' in cm.run_sequence:
-        params, gl_params = cm.step('harmonize')
-        run = params.get('run', False)
-        preload_cache = params.get('preload_cache', False)
+    if "harmonize" in cm.run_sequence:
+        params, gl_params = cm.step("harmonize")
+        run = params.get("run", False)
+        preload_cache = params.get("preload_cache", False)
         if run and preload_cache:
-            if 'ref_infer' in gl_params:
-                NUM_WORKERS = cm.c.get('n_cores', None) or int(os.environ.get("SLURM_CPUS_PER_TASK", 1)) # default to 1 if not set. It is used only if cache has to be built
-                ref_alt_freq = gl_params.get('ref_alt_freq', None)
-                base_path = gl_params['ref_infer']
-                cache_process = gl.cache_manager.CacheProcess(base_path, ref_alt_freq=ref_alt_freq, category=gl.cache_manager.PALINDROMIC_INDEL, n_cores=NUM_WORKERS, log=sm.mysumstats.log, verbose=True)
+            if "ref_infer" in gl_params:
+                NUM_WORKERS = cm.config.get("n_cores", None) or int(
+                    os.environ.get("SLURM_CPUS_PER_TASK", 1)
+                )  # default to 1 if not set. It is used only if cache has to be built
+                ref_alt_freq = gl_params.get("ref_alt_freq", None)
+                base_path = gl_params["ref_infer"]
+                cache_process = gl.cache_manager.CacheProcess(
+                    base_path,
+                    ref_alt_freq=ref_alt_freq,
+                    category=gl.cache_manager.PALINDROMIC_INDEL,
+                    n_cores=NUM_WORKERS,
+                    log=sm.mysumstats.log,
+                    verbose=True,
+                )
                 cache_process.start()
 
-                # Add cache options to inferstrand_args               
-                inferstrand_args = gl_params.get('inferstrand_args', {})
-                cache_options = inferstrand_args.get('cache_options', {})
-                cache_options.update({'cache_process': cache_process})
-                inferstrand_args.update({'cache_options': cache_options})
-                gl_params['inferstrand_args'] = inferstrand_args
+                # Add cache options to inferstrand_args
+                inferstrand_args = gl_params.get("inferstrand_args", {})
+                cache_options = inferstrand_args.get("cache_options", {})
+                cache_options.update({"cache_process": cache_process})
+                inferstrand_args.update({"cache_options": cache_options})
+                gl_params["inferstrand_args"] = inferstrand_args
 
     for step in cm.run_sequence:
         params, gl_params = cm.step(step)
-        run = params.get('run', False)
-        ws = params.get('workspace', 'default')
-        ws_subfolder = params.get('workspace_subfolder', False)
+        run = params.get("run", False)
+        ws = params.get("workspace", "default")
+        ws_subfolder = params.get("workspace_subfolder", False)
         if ws_subfolder:
             workspace_path = Path(cm.root_path, ws, input_file_stem)
         else:
@@ -107,31 +111,25 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 sm.mysumstats.basic_check(**gl_params)
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
-                genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
-                text = f"\nInferred genome build: {genome_build}\n"
-                # with open(report_if_file_path, "a") as fp:
-                #     fp.write(text)
+                # genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
+                # text = f"\nInferred genome build: {genome_build}\n"
             elif step == "fill_data":
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
                 sm.mysumstats.harmonize(**gl_params)
-            elif step =="liftover":
+            elif step == "liftover":
                 sm.mysumstats.liftover(**gl_params)
             elif step == "report_harmonization_summary":
                 summary = sm.mysumstats.lookup_status().to_string()
-                output_path = str(
-                    Path(workspace_path,
-                         '.'.join([input_file_stem, 'harmonization_summary.tsv'])))
+                output_path = str(Path(workspace_path, ".".join([input_file_stem, "harmonization_summary.tsv"])))
                 with open(output_path, "w") as fp:
                     fp.write(summary)
             elif step == "report_min_pvalue":
-                nrows = params.get('nrows', 1)
-                df = sm.mysumstats.data.nlargest(nrows, 'MLOG10P',
-                                                 keep="first").reset_index(drop=True)
+                nrows = params.get("nrows", 1)
+                df = sm.mysumstats.data.nlargest(nrows, "MLOG10P", keep="first").reset_index(drop=True)
                 snpid = df.at[0, "SNPID"]
                 mlog10p = df.at[0, "MLOG10P"]
-                output_path = str(
-                    Path(workspace_path, '.'.join([input_file_stem, 'nlargest.txt'])))
+                output_path = str(Path(workspace_path, ".".join([input_file_stem, "nlargest.txt"])))
                 with open(output_path, "w") as fp:
                     fp.write("input_file\tSNPID\tMLOG10P\n")
                     fp.write(f"{input_file_name}\t{snpid}\t{mlog10p}\n")
@@ -142,37 +140,33 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
                 mean_chisq = str(round(CHISQ.mean(), 3))
                 lambda_GC = str(round(CHISQ.median() / 0.4549, 3))
 
-                output_path = str(
-                    Path(workspace_path, '.'.join([input_file_stem, 'if.txt'])))
+                output_path = str(Path(workspace_path, ".".join([input_file_stem, "if.txt"])))
                 with open(output_path, "w") as fp:
                     fp.write("input_file\tlambda_GC\tmean_chisq\tmax_chisq\n")
                     fp.write(f"{input_file_name}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
             elif step == "sort_alphabetically":
-                n_cores = gl_params.get('n_cores', 1)
+                n_cores = gl_params.get("n_cores", 1)
                 sm.mysumstats.order_alleles(n_cores=n_cores)
-            elif step == 'write_pickle':
-                output_path = str(
-                    Path(workspace_path, '.'.join([input_file_stem, 'pkl'])))
-                gl.dump_pickle(sm.mysumstats, output_path, overwrite=params['overwrite'])
+            elif step == "write_pickle":
+                output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
+                gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
             elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, **gl_params)
-            elif step == 'write_vcf':
+            elif step == "write_vcf":
                 study_name = input_file_stem
-                sm.mysumstats.meta["gwaslab"][
-                    "study_name"] = study_name
+                sm.mysumstats.meta["gwaslab"]["study_name"] = study_name
                 sm.mysumstats.infer_build()
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, **gl_params)
-            elif step == 'write_same_input_format':
+            elif step == "write_same_input_format":
                 output_path = str(Path(workspace_path, input_file_stem))
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
-            elif step == 'qq_manhattan_plots':
-                output_path = str(
-                    Path(workspace_path, '.'.join([input_file_stem, 'png'])))
-                cut = round(-np.log10(gl_params['sig_level'])) + params['dist']
+            elif step == "qq_manhattan_plots":
+                output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
+                cut = round(-np.log10(gl_params["sig_level"])) + params["dist"]
                 sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
-            elif step == 'cistrans_annotation':
+            elif step == "cistrans_annotation":
                 cistrans_gene_tagger(params, workspace_path)
             logger.info(f"Finished {step} step")
         else:

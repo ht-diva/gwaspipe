@@ -1,7 +1,7 @@
 from cloup import Context, HelpFormatter, HelpTheme, Style
 from loguru import logger as a_logger
 
-__all__ = ["__appname__", "context_settings", "log_file", "logger"]
+__all__ = ["__appname__", "context_settings", "logger"]
 
 __appname__ = "gwaspipe"
 

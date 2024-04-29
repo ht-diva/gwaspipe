@@ -1,0 +1,4 @@
+# IO
+root_path: "tests/results"
+log_filename: "file.log"
+formatbook_path: "data/formatbook.json"
