@@ -11,14 +11,15 @@ from utils import __appname__, logger
 
 
 class SumstatsManager:
-    def __init__(self, input_path, input_format, input_separator, formatbook_path):
+    def __init__(self, input_path, input_format, input_separator, formatbook_path, pid):
         if formatbook_path.exists():
             gl.options.set_option("formatbook", str(formatbook_path))
         if input_format == "pickle":
             self.mysumstats = gl.load_pickle(input_path)
         else:
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
-        self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"]
+        if pid:
+            self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"]
 
 
 @click.command()
@@ -34,7 +35,8 @@ class SumstatsManager:
 @click.option("-o", "--output", help="Path where results should be saved")
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
-def main(config_file, input_file, input_file_format, input_file_separator, output, quiet):
+@click.option("--pid", default=False, is_flag=True, help="Preserve ID")
+def main(config_file, input_file, input_file_format, input_file_separator, output, quiet, pid):
     cm = ConfigurationManager(config_file=config_file, root_path=output)
     log_file = cm.log_file_path
 
@@ -57,7 +59,9 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
     formatbook_file_path = Path(cm.formatbook_path)
 
     if input_file_path.exists():
-        sm = SumstatsManager(input_file_path.as_posix(), input_file_format, input_file_separator, formatbook_file_path)
+        sm = SumstatsManager(
+            input_file_path.as_posix(), input_file_format, input_file_separator, formatbook_file_path, pid
+        )
     else:
         msg = f"{input_file_path} input file not found"
         exit(msg)
