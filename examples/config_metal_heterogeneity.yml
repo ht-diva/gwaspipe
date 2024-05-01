@@ -9,9 +9,8 @@ run_sequence: !!omap
   - 3: 'fill_data'
   - 4: 'harmonize'
   - 5: 'sort_alphabetically'
-  - 6: 'write_metal'
+  - 6: 'write_tsv'
   - 7: 'report_min_pvalue'
-  #- 7: 'write_tsv'
   - 8: 'report_harmonization_summary'
   - 9: 'report_inflation_factors'
   - 10: 'qq_manhattan_plots'
@@ -40,9 +39,6 @@ steps:
     gl_params:
       basic_check: False
       n_cores: *cores
-     # ref_seq: "data/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"
-     # ref_infer: "data/EUR.ALL.split_norm_af.1kgp3v5.hg19.vcf.gz"
-     # ref_alt_freq: "AF"
   report_min_pvalue:
     params:
       run: True
@@ -74,13 +70,13 @@ steps:
       build: "19"
       skip: 1
       sig_level: 5e-8
-  write_metal:
+  write_tsv:
     params:
       run: True
-      workspace: "metal"
+      workspace: "output"
       workspace_subfolder: True
     gl_params:
-      fmt: "metal_het"
+      fmt: "gwaslab"
       to_csvargs:
         compression:
           method: "gzip"

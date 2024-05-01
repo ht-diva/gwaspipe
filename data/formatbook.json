@@ -580,11 +580,19 @@
                 "EA",
                 "NEA",
                 "EAF",
-                "N",
+                "SEF",
+                "MINF",
+                "MAXF",
                 "BETA",
                 "SE",
+                "DIRECTION",
                 "P",
-                "MLOG10P"
+                "MLOG10P",
+                "N",
+                "HETISQ",
+                "HETCHISQ",
+                "HETDF",
+                "LHETP"
             ],
             "format_version": "20231220_v4"
         },
@@ -596,6 +604,9 @@
             "NEA": "NEA",
             "EA": "EA",
             "EAF": "EAF",
+            "SEF": "SEF",
+            "MINF": "MINF",
+            "MAXF": "MAXF",
             "N": "N",
             "BETA": "BETA",
             "SE": "SE",
@@ -620,7 +631,11 @@
             "MAF": "MAF",
             "DIRECTION": "DIRECTION",
             "REF": "REF",
-            "ALT": "ALT"
+            "ALT": "ALT",
+            "HETISQ": "HETISQ",
+            "HETCHISQ": "HETCHISQ",
+            "HETDF": "HETDF",
+            "LHETP": "LHETP"
         }
     },
     "plink2_linear": {
