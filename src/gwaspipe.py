@@ -19,7 +19,7 @@ class SumstatsManager:
         else:
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
         if pid:
-            self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"]
+            self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"].astype("string")
 
 
 @click.command()
@@ -58,6 +58,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
 
     formatbook_file_path = Path(cm.formatbook_path)
 
+    if "write_snp_mapping" in cm.run_sequence:
+        pid = True
     if input_file_path.exists():
         sm = SumstatsManager(
             input_file_path.as_posix(), input_file_format, input_file_separator, formatbook_file_path, pid
@@ -109,7 +111,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
         if run:
             logger.info(f"Started {step} step")
             if step == "write_snp_mapping":
-                output_path = str(Path(workspace_path, input_file_stem))
+                output_path = str(Path(workspace_path, "table"))
+                sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)

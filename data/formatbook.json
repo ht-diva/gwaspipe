@@ -3,11 +3,17 @@
         "meta_data": {
             "format_name": "snp_mapping",
             "format_source": "",
-            "format_version": "20240423"
+            "format_version": "20240423",
+            "format_col_order": [
+                "SNPID",
+                "PREVIOUS_ID",
+                "EQUALS"
+            ]
         },
         "format_dict": {
             "SNPID": "SNPID",
-            "PREVIOUS_ID": "PREVIOUS_ID"
+            "PREVIOUS_ID": "PREVIOUS_ID",
+            "EQUALS": "EQUALS"
         }
     },
     "metal": {
