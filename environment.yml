@@ -15,3 +15,4 @@ dependencies:
       - loguru==0.7.2
       - cloup==3.0.4
       - pybedtools==0.9.1
+      - matplolib==3.8.3
