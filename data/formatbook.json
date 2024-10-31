@@ -12,6 +12,7 @@
                 "effectAllele",
                 "otherAllele",
                 "minus_log10_pval",
+                "Beta",
                 "SE",
                 "N",
                 "ImpMAF"
@@ -24,6 +25,7 @@
             "effectAllele": "EA",
             "otherAllele": "NEA",
             "minus_log10_pval": "MLOG10P",
+            "Beta": "BETA",
             "SE": "SE",
             "N": "N",
             "ImpMAF": "EAF"
