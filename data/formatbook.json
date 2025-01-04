@@ -630,7 +630,8 @@
                 "HETISQ",
                 "HETCHISQ",
                 "HETDF",
-                "LHETP"
+                "LHETP",
+                "Z"
             ],
             "format_version": "20231220_v4"
         },
@@ -673,7 +674,8 @@
             "HETISQ": "HETISQ",
             "HETCHISQ": "HETCHISQ",
             "HETDF": "HETDF",
-            "LHETP": "LHETP"
+            "LHETP": "LHETP",
+            "Z": "Z"
         }
     },
     "plink2_linear": {
