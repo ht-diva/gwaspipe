@@ -29,7 +29,7 @@ class SumstatsManager:
     "-f",
     "--input_file_format",
     required=True,
-    type=click.Choice(["regenie", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False),
+    type=click.Choice(["gwaslab", "regenie", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False),
     help="Input file format",
 )
 @click.option("-o", "--output", help="Path where results should be saved")
