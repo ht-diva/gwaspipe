@@ -31,10 +31,8 @@ RUN . /opt/conda/etc/profile.d/conda.sh && \
 FROM python:3.10
 # copy over the generated environment
 COPY --from=builder /opt/env /opt/env
-ARG YOUR_ENV
 
-ENV YOUR_ENV=${YOUR_ENV} \
-  PYTHONFAULTHANDLER=1 \
+ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
   PYTHONHASHSEED=random \
   PIP_NO_CACHE_DIR=off \
@@ -49,7 +47,7 @@ COPY pyproject.toml /code/
 
 # Project initialization:
 RUN poetry config virtualenvs.create false \
-  && poetry install --without dev --no-interaction --no-ansi
+  && poetry install --without dev --no-interaction --no-ansi --no-root
 
 # Creating folders, and files for a project:
 COPY . /code
