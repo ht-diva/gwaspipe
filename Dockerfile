@@ -3,7 +3,7 @@
 # -----------------
 # Builder container
 # -----------------
-FROM condaforge/mambaforge:4.14.0-0 as builder
+FROM condaforge/mambaforge:4.14.0-0 AS builder
 
 COPY environment_docker.yml /docker/environment.yml
 
