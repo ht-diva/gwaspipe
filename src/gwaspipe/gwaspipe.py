@@ -11,11 +11,13 @@ from gwaspipe.utils import __appname__, logger
 
 
 class SumstatsManager:
-    def __init__(self, input_path, input_format, input_separator, formatbook_path, pid):
+    def __init__(self, input_path, input_format, input_separator, input_study, formatbook_path, pid):
         if formatbook_path.exists():
             gl.options.set_option("formatbook", str(formatbook_path))
         if input_format == "pickle":
             self.mysumstats = gl.load_pickle(input_path)
+        elif input_format == "vcf":
+            self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator, study=input_study)
         else:
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
         if pid:
@@ -36,9 +38,10 @@ class SumstatsManager:
 )
 @click.option("-o", "--output", help="Path where results should be saved")
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
+@click.option("--study_label", default="Study", help="Input study label, valid only for VCF files")
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
 @click.option("--pid", default=False, is_flag=True, help="Preserve ID")
-def main(config_file, input_file, input_file_format, input_file_separator, output, quiet, pid):
+def main(config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid):
     cm = ConfigurationManager(config_file=config_file, root_path=output)
     log_file = cm.log_file_path
 
@@ -64,7 +67,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, outpu
         pid = True
     if input_file_path.exists():
         sm = SumstatsManager(
-            input_file_path.as_posix(), input_file_format, input_file_separator, formatbook_file_path, pid
+            input_file_path.as_posix(), input_file_format, input_file_separator, study_label, formatbook_file_path, pid
         )
     else:
         msg = f"{input_file_path} input file not found"
