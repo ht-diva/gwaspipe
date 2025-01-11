@@ -5,7 +5,6 @@ import click
 import gwaslab as gl
 import numpy as np
 
-# from cistrans_tagger import cistrans_gene_tagger
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.utils import __appname__, logger
 
@@ -178,8 +177,6 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
                 cut = round(-np.log10(gl_params["sig_level"])) + params["dist"]
                 sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
-            # elif step == "cistrans_annotation":
-            #     cistrans_gene_tagger(params, workspace_path)
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
