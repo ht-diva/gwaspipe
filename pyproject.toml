@@ -1,0 +1,37 @@
+[project]
+name = "gwaspipe"
+version = "0.2.0"
+description = "A Python tool, based on GWASLab, for assembling a computational pipeline to standardize, QC, harmonize, convert, and plot summary statistics."
+authors = [
+    {name = "Gianmauro Cuccuru",email = "gianmauro.cuccuru@fht.org"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    "click (>=8.1.8,<9.0.0)",
+    "cloup (>=3.0.5,<4.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "ruamel-yaml (>=0.18.10,<0.19.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "pyarrow (>=18.1.0,<19.0.0)",
+    "numpy (>=2.2.1,<3.0.0)",
+    "matplotlib (>=3.10.0,<4.0.0)",
+    "gwaslab @ git+https://github.com/ht-diva/gwaslab.git@order_alleles"
+]
+
+[project.scripts]
+gwaspipe = 'gwaspipe.gwaspipe:main'
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
+ruff = "^0.8.6"
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
+pytest-randomly = "^3.16.0"
+
+[tool.ruff]
+line-length = 120

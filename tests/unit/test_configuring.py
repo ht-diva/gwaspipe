@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from src.configuring import ConfigurationManager
+from gwaspipe.configuring import ConfigurationManager
 
 
 class TestConfigurationManager(unittest.TestCase):
