@@ -2,7 +2,7 @@ name: Docker
 
 on:
   push:
-    branches: [ "main", "docker" ]
+    branches: [ "main" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
@@ -49,12 +49,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Set IMAGE_TAG value
-      - name: Set the value
-        id: step_one
-        run: |
-          echo "IMAGE_TAG=$(date +'%Y-%m-%dT%H.%M.%S')" >> $GITHUB_ENV
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
