@@ -3,7 +3,7 @@
 # -----------------
 # Builder container
 # -----------------
-FROM condaforge/mambaforge:4.14.0-0 AS builder
+FROM condaforge/mambaforge:24.9.2-0 AS builder
 
 COPY environment_docker.yml /docker/environment.yml
 
@@ -11,7 +11,7 @@ RUN . /opt/conda/etc/profile.d/conda.sh && \
     mamba create --name lock && \
     conda activate lock && \
     mamba env list && \
-    mamba install --yes pip conda-lock>=1.2.2 setuptools wheel && \
+    mamba install --yes pip conda-lock>=2.5.6 setuptools wheel && \
     conda lock \
         --file /docker/environment.yml \
         --kind lock \
@@ -43,13 +43,10 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # Copy only requirements to cache them in docker layer
 WORKDIR /code
-COPY pyproject.toml /code/
+COPY . /code/
 
 # Project initialization:
-RUN poetry config virtualenvs.create false \
-  && poetry install --without dev --no-interaction --no-ansi --no-root
+RUN poetry config virtualenvs.create false
 
-# Creating folders, and files for a project:
-COPY . /code
-
-RUN make install
+RUN make install && \
+    make clean

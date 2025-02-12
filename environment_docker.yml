@@ -12,4 +12,5 @@ dependencies:
 
 # Non-standard section listing target platforms for conda-lock:
 platforms:
+  - linux-aarch64
   - linux-64
