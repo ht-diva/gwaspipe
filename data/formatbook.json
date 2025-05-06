@@ -48,6 +48,25 @@
             "EQUALS": "EQUALS"
         }
     },
+    "snp_mapping_rsid": {
+        "meta_data": {
+            "format_name": "snp_mapping_rsid",
+            "format_source": "",
+            "format_version": "20240423",
+            "format_col_order": [
+                "PREVIOUS_rsID",
+                "SNPID",
+                "PREVIOUS_ID",
+                "EQUALS"
+            ]
+        },
+        "format_dict": {
+            "PREVIOUS_rsID": "PREVIOUS_rsID",
+            "SNPID": "SNPID",
+            "PREVIOUS_ID": "PREVIOUS_ID",
+            "EQUALS": "EQUALS"
+        }
+    },
     "metal": {
         "meta_data": {
             "format_name": "metal",

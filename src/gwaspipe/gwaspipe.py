@@ -20,8 +20,26 @@ class SumstatsManager:
         else:
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
         if pid:
-            self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"].astype("string")
+            if "rsID" in self.mysumstats.data:
+                self.mysumstats.data["PREVIOUS_rsID"] = self.mysumstats.data["rsID"].astype("string")
+            if "SNPID" in self.mysumstats.data:
+                self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"].astype("string")
+            else:
+                self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["CHR"].astype("string") + ':' + \
+                    self.mysumstats.data["POS"].astype("string") + ':' + \
+                    self.mysumstats.data["EA"].astype("string") + ':' + \
+                    self.mysumstats.data["NEA"].astype("string")
 
+    def float_dict_custom(self, gp):
+        # Preserve the number of decimals from the input data (statistics)     
+        float_dict = {}
+        for col in self.mysumstats.data.columns: 
+            if str(self.mysumstats.data[col].dtype) in ["Float32","Float64","float64","float32","float16","float"]:
+                fn = self.mysumstats.data[col].apply(lambda x: len(str(x).split('.')[-1]) if '.' in str(x) else 0).max()
+                float_dict[col] = '{:.'+str(fn)+'f}'
+        if "float_formats" in gp:
+            float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
+        return float_dict
 
 @click.command()
 @click.option("-c", "--config_file", required=True, help="Configuration file path")
@@ -31,7 +49,7 @@ class SumstatsManager:
     "--input_file_format",
     required=True,
     type=click.Choice(
-        ["finngen", "vcf", "gwaslab", "regenie", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
+        ["finngen", "vcf", "decode", "gwaslab", "regenie", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
     ),
     help="Input file format",
 )
@@ -116,7 +134,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
             logger.info(f"Started {step} step")
             if step == "write_snp_mapping":
                 output_path = str(Path(workspace_path, "table"))
-                sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]
+                sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]      
+                gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
@@ -163,15 +182,18 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
             elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa"]:
                 output_path = str(Path(workspace_path, input_file_stem))
+                gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "write_vcf":
                 study_name = input_file_stem
                 sm.mysumstats.meta["gwaslab"]["study_name"] = study_name
                 sm.mysumstats.infer_build()
                 output_path = str(Path(workspace_path, input_file_stem))
+                gl_params["float_formats"] = sm.float_dict_custom(gl_params)                 
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "write_same_input_format":
                 output_path = str(Path(workspace_path, input_file_stem))
+                gl_params["float_formats"] = sm.float_dict_custom(gl_params)  
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
             elif step == "qq_manhattan_plots":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
