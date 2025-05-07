@@ -1,6 +1,6 @@
 [project]
 name = "gwaspipe"
-version = "0.2.1"
+version = "0.2.2"
 description = "A Python tool, based on GWASLab, for assembling a computational pipeline to standardize, QC, harmonize, convert, and plot summary statistics."
 authors = [
     {name = "Gianmauro Cuccuru",email = "gianmauro.cuccuru@fht.org"}
