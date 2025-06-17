@@ -4,6 +4,7 @@ from pathlib import Path
 import click
 import gwaslab as gl
 import numpy as np
+import gzip
 
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.utils import __appname__, logger
@@ -79,6 +80,16 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
         input_file_stem = input_file_path.stem
 
     formatbook_file_path = Path(cm.formatbook_path)
+
+    if input_file_format == "vcf":
+        with gzip.open(input_file_path, "rt") as vcf_f:
+            vcf_header = next(line.strip() for line in vcf_f if line.startswith("#CHROM"))
+        vcf_cols = vcf_header.split("\t")
+        vcf_format_idx = vcf_cols.index("FORMAT")
+        try:
+            study_label = vcf_cols[vcf_format_idx + 1]
+        except IndexError:
+            print("No study label found after FORMAT.")
 
     if "write_snp_mapping" in cm.run_sequence:
         pid = True
