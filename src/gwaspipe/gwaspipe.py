@@ -11,7 +11,7 @@ from gwaspipe.utils import __appname__, logger
 
 
 class SumstatsManager:
-    def __init__(self, input_path, input_format, input_separator, input_study, formatbook_path, pid):
+    def __init__(self, input_path, input_format, input_separator, input_study, formatbook_path, pid, bcfliftover):
         if formatbook_path.exists():
             gl.options.set_option("formatbook", str(formatbook_path))
         if input_format == "pickle":
@@ -30,6 +30,10 @@ class SumstatsManager:
                     self.mysumstats.data["POS"].astype("string") + ':' + \
                     self.mysumstats.data["EA"].astype("string") + ':' + \
                     self.mysumstats.data["NEA"].astype("string")
+            if bcfliftover:
+                self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["rsID"].astype("string").str.replace("_",":",regex=False)
+        if bcfliftover:
+            self.mysumstats.data.drop(columns=["rsID"], inplace=True)
 
     def float_dict_custom(self, gp):
         # Preserve the number of decimals from the input data (statistics)     
@@ -59,7 +63,8 @@ class SumstatsManager:
 @click.option("--study_label", default="Study", help="Input study label, valid only for VCF files")
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
 @click.option("--pid", default=False, is_flag=True, help="Preserve ID")
-def main(config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid):
+@click.option("--bcfliftover", default=False, is_flag=True, help="Input from BCFtools liftover")
+def main(config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid, bcfliftover):
     cm = ConfigurationManager(config_file=config_file, root_path=output)
     log_file = cm.log_file_path
 
@@ -95,7 +100,7 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
         pid = True
     if input_file_path.exists():
         sm = SumstatsManager(
-            input_file_path.as_posix(), input_file_format, input_file_separator, study_label, formatbook_file_path, pid
+            input_file_path.as_posix(), input_file_format, input_file_separator, study_label, formatbook_file_path, pid, bcfliftover
         )
     else:
         msg = f"{input_file_path} input file not found"
