@@ -152,6 +152,22 @@
             "hm_ci_upper": "OR_95U"
         }
     },
+    "gwascatalog_hm_custom": {
+        "meta_data": {
+            "format_name": "gwascatalog_hm_custom"
+        },
+        "format_dict": {
+            "hm_variant_id": "SNPID",
+            "chromosome": "CHR",
+            "base_pair_location": "POS",
+            "hm_other_allele": "NEA",
+            "hm_effect_allele": "EA",
+            "hm_beta": "BETA",
+            "hm_effect_allele_frequency": "EAF",
+            "standard_error": "SE",
+            "p-value": "P"
+        }
+    },
     "gwascatalog": {
         "meta_data": {
             "format_name": "gwascatalog",
@@ -590,6 +606,43 @@
             "hazard_ratio": "HR",
             "ci_lower": "OR_95L",
             "ci_upper": "OR_95U"
+        }
+    },
+    "ssf_custom": {
+        "meta_data": {
+            "format_name": "ssf_custom",
+            "format_separator": "\t",
+            "format_na": "#NA",
+            "format_comment": null,
+            "format_col_order": [
+                "chromosome",
+                "base_pair_location",
+                "effect_allele",
+                "other_allele",
+                "beta",
+                "standard_error",
+                "effect_allele_frequency",
+                "p_value",
+                "neg_log_10_p_value",
+                "rsid",
+                "variant_id",
+                "ref_allele",
+                "n"
+            ]
+        },
+        "format_dict": {
+            "variant_id": "rsID0",
+            "rsid": "rsID",
+            "chromosome": "CHR",
+            "base_pair_location": "POS",
+            "other_allele": "NEA",
+            "effect_allele": "EA",
+            "effect_allele_frequency": "EAF",
+            "n": "N",
+            "beta": "BETA",
+            "standard_error": "SE",
+            "p_value": "P",
+            "neg_log_10_p_value": "MLOG10P"
         }
     },
     "plink_fisher": {
