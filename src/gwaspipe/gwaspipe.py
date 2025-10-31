@@ -19,11 +19,20 @@ class SumstatsManager:
         elif input_format == "vcf":
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator, study=input_study)
         else:
-            self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
+            self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)     
+        if input_format == "gtex":
+            if "CHR" not in self.mysumstats.data.columns:
+                self.mysumstats.data["CHR"] = self.mysumstats.data["SNPID"].str.split("_", expand=True)[0]
+            if "POS" not in self.mysumstats.data.columns:
+                self.mysumstats.data["POS"] = self.mysumstats.data["SNPID"].str.split("_", expand=True)[1].astype(int)
+            if "NEA" not in self.mysumstats.data.columns:
+                self.mysumstats.data["NEA"] = self.mysumstats.data["SNPID"].str.split("_", expand=True)[2]
+            if "EA" not in self.mysumstats.data.columns:
+                self.mysumstats.data["EA"] = self.mysumstats.data["SNPID"].str.split("_", expand=True)[3]
         if pid:
-            if "rsID" in self.mysumstats.data:
+            if "rsID" in self.mysumstats.data.columns:
                 self.mysumstats.data["PREVIOUS_rsID"] = self.mysumstats.data["rsID"].astype("string")
-            if "SNPID" in self.mysumstats.data:
+            if "SNPID" in self.mysumstats.data.columns:
                 self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"].astype("string")
             else:
                 self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["CHR"].astype("string") + ':' + \
@@ -54,7 +63,7 @@ class SumstatsManager:
     "--input_file_format",
     required=True,
     type=click.Choice(
-        ["gwascatalog_hm_custom", "ssf_custom", "finngen", "vcf", "decode", "gwaslab", "regenie", "regenie_gene", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
+        ["gtex", "gwascatalog_hm_custom", "ssf_custom", "finngen", "vcf", "decode", "gwaslab", "regenie", "regenie_gene", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
     ),
     help="Input file format",
 )

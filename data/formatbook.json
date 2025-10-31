@@ -1185,6 +1185,36 @@
             "af_alt_controls": "EAF_CONTROL"
         }
     },
+    "gtex": {
+        "meta_data": {
+            "format_name": "gtex",
+            "format_source": "https://www.gtexportal.org/home/downloads/adult-gtex/qtl",
+            "format_separator": "\t",
+            "format_version": "V10",
+            "format_col_order": [
+                "gene_id",
+                "variant_id",
+                "tss_distance",
+                "tss_distance",
+                "af",
+                "ma_samples",
+                "ma_count",
+                "pval_nominal",
+                "slope",
+                "slope_se"
+            ]
+        },
+        "format_dict": {
+            "variant_id": "SNPID",
+            "gene_id": "GENEID",
+            "ma_samples": "N",
+            "pval_nominal": "P",
+            "slope": "BETA",
+            "slope_se": "SE",
+            "af": "EAF",
+            "tss_distance": "TSS_DISTANCE"
+        }
+    },
     "auto": {
         "meta_data": {
             "format_name": "auto",
