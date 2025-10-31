@@ -55,6 +55,11 @@ class SumstatsManager:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
 
+    def alleles_match(self, snpid, prev_id):
+        snp_alleles = snpid.split(":")[-2:]
+        prev_alleles = prev_id.replace("_", ":").split(":")[2:4]
+        return snp_alleles == prev_alleles
+
 @click.command()
 @click.option("-c", "--config_file", required=True, help="Configuration file path")
 @click.option("-i", "--input_file", required=True, help="Input file path")
@@ -158,8 +163,10 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
         if run:
             logger.info(f"Started {step} step")
             if step == "write_snp_mapping":
-                output_path = str(Path(workspace_path, "table"))
-                sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]      
+                output_path = str(Path(workspace_path, "table")) 
+                sm.mysumstats.data["EQUALS"] = sm.mysumstats.data.apply(
+                    lambda row: sm.alleles_match(row["SNPID"], row["PREVIOUS_ID"]), 
+                    axis=1)
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
