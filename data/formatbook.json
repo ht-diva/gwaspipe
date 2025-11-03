@@ -1189,7 +1189,7 @@
         "meta_data": {
             "format_name": "gtex",
             "format_source": "https://www.gtexportal.org/home/downloads/adult-gtex/qtl",
-            "format_separator": "\t",
+            "format_separator": ",",
             "format_version": "V10",
             "format_col_order": [
                 "gene_id",
