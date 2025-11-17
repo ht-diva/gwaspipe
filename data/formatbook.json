@@ -1237,6 +1237,7 @@
             "rsid": "rsID",
             "hm_rsID": "rsID",
             "rsID": "SNPID",
+            "gene_id": "GENEID",
             "chromosome": "CHR",
             "Chromosome": "CHR",
             "CHROMOSOME": "CHR",
