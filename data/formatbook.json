@@ -700,6 +700,7 @@
             "format_name": "gwaslab",
             "format_source": "https://cloufield.github.io/gwaslab/",
             "format_col_order": [
+                "GENEID",
                 "CHR",
                 "POS",
                 "rsID",
@@ -727,6 +728,7 @@
         "format_dict": {
             "SNPID": "SNPID",
             "rsID": "rsID",
+            "GENEID": "GENEID",
             "CHR": "CHR",
             "POS": "POS",
             "NEA": "NEA",
