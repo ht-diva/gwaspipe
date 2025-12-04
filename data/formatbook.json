@@ -700,9 +700,14 @@
             "format_name": "gwaslab",
             "format_source": "https://cloufield.github.io/gwaslab/",
             "format_col_order": [
+                "PQTLID",
                 "GENEID",
                 "CHR",
                 "POS",
+                "POS37",
+                "SEQID",
+                "OLINKID",
+                "UNIPROT",
                 "rsID",
                 "SNPID",
                 "EA",
@@ -721,11 +726,16 @@
                 "HETCHISQ",
                 "HETDF",
                 "LHETP",
-                "Z"
+                "Z",
+                "CIS_TRANS",
+                "PMID",
+                "COHORT",
+                "TECHNOLOGY"
             ],
             "format_version": "20231220_v4"
         },
         "format_dict": {
+            "PQTLID": "PQTLID",
             "SNPID": "SNPID",
             "rsID": "rsID",
             "GENEID": "GENEID",
@@ -766,7 +776,15 @@
             "HETCHISQ": "HETCHISQ",
             "HETDF": "HETDF",
             "LHETP": "LHETP",
-            "Z": "Z"
+            "Z": "Z",
+            "POS37": "POS37",
+            "SEQID": "SEQID",
+            "OLINKID": "OLINKID",
+            "UNIPROT": "UNIPROT",
+            "CIS_TRANS": "CIS_TRANS",
+            "PMID": "PMID",
+            "COHORT": "COHORT",
+            "TECHNOLOGY": "TECHNOLOGY"
         }
     },
     "plink2_linear": {
@@ -1215,6 +1233,55 @@
             "slope_se": "SE",
             "af": "EAF",
             "tss_distance": "TSS_DISTANCE"
+        }
+    },
+    "literature_rev": {
+        "meta_data": {
+            "format_name": "literature_rev",
+            "format_separator": "\t",
+            "format_version": "V1",
+            "format_header": true,     
+            "format_na": null,
+            "format_col_order": [
+                "pqtlID",
+                "rsID",
+                "chr",
+                "pos37",
+                "pos38",
+                "SeqID",
+                "OlinkID",
+                "UniProt",
+                "OTHER_ALLELE",
+                "EFFECT_ALLELE",
+                "cis_trans",
+                "PMID",
+                "BETA",
+                "SE",
+                "minuslog10pval",
+                "SAMPLE_SIZE",
+                "COHORT",
+                "TECHNOLOGY"
+            ]
+        },
+        "format_dict": {
+            "pqtlID": "PQTLID",
+            "rsID": "rsID",
+            "chr": "CHR",
+            "pos37": "POS37",
+            "pos38": "POS",
+            "SeqID": "SEQID",
+            "OlinkID": "OLINKID",
+            "UniProt": "UNIPROT",
+            "OTHER_ALLELE": "NEA",
+            "EFFECT_ALLELE": "EA",
+            "cis_trans": "CIS_TRANS",
+            "PMID": "PMID",
+            "BETA": "BETA",
+            "SE": "SE",
+            "minuslog10pval": "MLOG10P",
+            "SAMPLE_SIZE": "N",
+            "COHORT": "COHORT",
+            "TECHNOLOGY": "TECHNOLOGY"
         }
     },
     "auto": {

@@ -64,7 +64,7 @@ class SumstatsManager:
     "--input_file_format",
     required=True,
     type=click.Choice(
-        ["gtex", "gwascatalog_hm_custom", "ssf_custom", "finngen", "vcf", "decode", "gwaslab", "regenie", "regenie_gene", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
+        ["literature_rev", "gtex", "gwascatalog_hm_custom", "ssf_custom", "finngen", "vcf", "decode", "gwaslab", "regenie", "regenie_gene", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
     ),
     help="Input file format",
 )
