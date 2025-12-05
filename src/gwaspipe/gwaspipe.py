@@ -11,6 +11,16 @@ from gwaspipe.utils import __appname__, logger
 
 
 class SumstatsManager:
+    def _make_gwaslab_snpid(self):
+        """Return SNPID in GWASLab format (CHR:POS:EA:NEA)"""
+        df = self.mysumstats.data
+        return (
+            df["CHR"].astype("string") + ":" +
+            df["POS"].astype("string") + ":" +
+            df["EA"].astype("string") + ":" +
+            df["NEA"].astype("string")
+        )
+
     def __init__(self, input_path, input_format, input_separator, input_study, formatbook_path, pid, bcfliftover):
         if formatbook_path.exists():
             gl.options.set_option("formatbook", str(formatbook_path))
@@ -30,22 +40,20 @@ class SumstatsManager:
             if "EA" not in self.mysumstats.data.columns:
                 self.mysumstats.data["EA"] = self.mysumstats.data["SNPID"].str.split("_", expand=True)[3]
         if pid:
+            self.mysumstats.data["PREVIOUS_ID_GWASLAB"] = self._make_gwaslab_snpid()
             if "rsID" in self.mysumstats.data.columns:
                 self.mysumstats.data["PREVIOUS_rsID"] = self.mysumstats.data["rsID"].astype("string")
             if "SNPID" in self.mysumstats.data.columns:
                 self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["SNPID"].astype("string")
             else:
-                self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["CHR"].astype("string") + ':' + \
-                    self.mysumstats.data["POS"].astype("string") + ':' + \
-                    self.mysumstats.data["EA"].astype("string") + ':' + \
-                    self.mysumstats.data["NEA"].astype("string")
+                self.mysumstats.data["PREVIOUS_ID"] = self._make_gwaslab_snpid()
             if bcfliftover:
                 self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["rsID"].astype("string").str.replace("_",":",regex=False)
         if bcfliftover:
             self.mysumstats.data.drop(columns=["rsID"], inplace=True)
 
     def float_dict_custom(self, gp):
-        # Preserve the number of decimals from the input data (statistics)     
+        """Preserve the number of decimals from the input data (statistics)"""
         float_dict = {}
         for col in self.mysumstats.data.columns: 
             if str(self.mysumstats.data[col].dtype) in ["Float32","Float64","float64","float32","float16","float"]:
@@ -160,11 +168,12 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
             logger.info(f"Started {step} step")
             if step == "write_snp_mapping":
                 output_path = str(Path(workspace_path, "table"))
+                sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]
                 snp_split = sm.mysumstats.data["SNPID"].str.split(":", expand=True)
-                prev_split = sm.mysumstats.data["PREVIOUS_ID"].str.replace("_", ":", regex=False).str.split(":", expand=True)
-                sm.mysumstats.data["EQUALS"] = (
-                    (snp_split.iloc[:, -2] == prev_split.iloc[:, 2]) &
-                    (snp_split.iloc[:, -1] == prev_split.iloc[:, 3])
+                prev_split = sm.mysumstats.data["PREVIOUS_ID_GWASLAB"].str.split(":", expand=True)
+                sm.mysumstats.data["FLIPPED"] = (
+                    (snp_split.iloc[:, -2] == prev_split.iloc[:, -2]) &
+                    (snp_split.iloc[:, -1] == prev_split.iloc[:, -1])
                 )
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)

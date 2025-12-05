@@ -39,13 +39,15 @@
             "format_col_order": [
                 "SNPID",
                 "PREVIOUS_ID",
-                "EQUALS"
+                "EQUALS",
+                "FLIPPED"
             ]
         },
         "format_dict": {
             "SNPID": "SNPID",
             "PREVIOUS_ID": "PREVIOUS_ID",
-            "EQUALS": "EQUALS"
+            "EQUALS": "EQUALS",
+            "FLIPPED": "FLIPPED"
         }
     },
     "snp_mapping_rsid": {
