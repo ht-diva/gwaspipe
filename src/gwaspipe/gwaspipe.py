@@ -14,12 +14,7 @@ class SumstatsManager:
     def _make_gwaslab_snpid(self):
         """Return SNPID in GWASLab format (CHR:POS:EA:NEA)"""
         df = self.mysumstats.data
-        return (
-            df["CHR"].astype("string") + ":" +
-            df["POS"].astype("string") + ":" +
-            df["EA"].astype("string") + ":" +
-            df["NEA"].astype("string")
-        )
+        return df[["CHR", "POS", "EA", "NEA"]].astype(str).agg(":".join, axis=1)
 
     def __init__(self, input_path, input_format, input_separator, input_study, formatbook_path, pid, bcfliftover):
         if formatbook_path.exists():
