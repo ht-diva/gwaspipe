@@ -167,8 +167,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
                 snp_split = sm.mysumstats.data["SNPID"].str.split(":", expand=True)
                 prev_split = sm.mysumstats.data["PREVIOUS_ID_GWASLAB"].str.split(":", expand=True)
                 sm.mysumstats.data["FLIPPED"] = (
-                    (snp_split.iloc[:, -2] == prev_split.iloc[:, -2]) &
-                    (snp_split.iloc[:, -1] == prev_split.iloc[:, -1])
+                    (snp_split.iloc[:, -2] != prev_split.iloc[:, -2]) &
+                    (snp_split.iloc[:, -1] != prev_split.iloc[:, -1])
                 )
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
