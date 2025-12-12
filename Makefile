@@ -8,6 +8,11 @@ all:
 build: clean dependencies
 	poetry build
 
+bump-version:
+	git-cliff --bumped-version | sed 's/^v//' > version.txt
+	python bump-version.py
+	git-cliff --bump > docs/changelog.md
+
 clean:
 	find . -name '*.pyc' -delete
 	find . -type d -name '__pycache__' -exec rm -rf {} +
