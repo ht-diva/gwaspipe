@@ -1,10 +1,10 @@
+import gzip
 import os
 from pathlib import Path
 
 import click
 import gwaslab as gl
 import numpy as np
-import gzip
 
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.utils import __appname__, logger
@@ -24,7 +24,7 @@ class SumstatsManager:
         elif input_format == "vcf":
             self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator, study=input_study)
         else:
-            self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)     
+            self.mysumstats = gl.Sumstats(input_path, fmt=input_format, sep=input_separator)
         if input_format == "gtex":
             if "CHR" not in self.mysumstats.data.columns:
                 self.mysumstats.data["CHR"] = self.mysumstats.data["SNPID"].str.split("_", expand=True)[0]
@@ -43,17 +43,19 @@ class SumstatsManager:
             else:
                 self.mysumstats.data["PREVIOUS_ID"] = self._make_gwaslab_snpid()
             if bcfliftover:
-                self.mysumstats.data["PREVIOUS_ID"] = self.mysumstats.data["rsID"].astype("string").str.replace("_",":",regex=False)
+                self.mysumstats.data["PREVIOUS_ID"] = (
+                    self.mysumstats.data["rsID"].astype("string").str.replace("_", ":", regex=False)
+                )
         if bcfliftover:
             self.mysumstats.data.drop(columns=["rsID"], inplace=True)
 
     def float_dict_custom(self, gp):
         """Preserve the number of decimals from the input data (statistics)"""
         float_dict = {}
-        for col in self.mysumstats.data.columns: 
-            if str(self.mysumstats.data[col].dtype) in ["Float32","Float64","float64","float32","float16","float"]:
-                fn = self.mysumstats.data[col].apply(lambda x: len(str(x).split('.')[-1]) if '.' in str(x) else 0).max()
-                float_dict[col] = '{:.'+str(fn)+'f}'
+        for col in self.mysumstats.data.columns:
+            if str(self.mysumstats.data[col].dtype) in ["Float32", "Float64", "float64", "float32", "float16", "float"]:
+                fn = self.mysumstats.data[col].apply(lambda x: len(str(x).split(".")[-1]) if "." in str(x) else 0).max()
+                float_dict[col] = "{:." + str(fn) + "f}"
         if "float_formats" in gp:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
@@ -67,7 +69,25 @@ class SumstatsManager:
     "--input_file_format",
     required=True,
     type=click.Choice(
-        ["literature_rev", "gtex", "gwascatalog_hm_custom", "ssf_custom", "finngen", "vcf", "decode", "gwaslab", "regenie", "regenie_gene", "fastgwa", "ldsc", "fuma", "pickle", "metal_het"], case_sensitive=False
+        [
+            "plink_pvar",
+            "literature_rev",
+            "gtex",
+            "gwascatalog_hm_custom",
+            "ssf_custom",
+            "finngen",
+            "vcf",
+            "decode",
+            "gwaslab",
+            "regenie",
+            "regenie_gene",
+            "fastgwa",
+            "ldsc",
+            "fuma",
+            "pickle",
+            "metal_het",
+        ],
+        case_sensitive=False,
     ),
     help="Input file format",
 )
@@ -77,7 +97,9 @@ class SumstatsManager:
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
 @click.option("--pid", default=False, is_flag=True, help="Preserve ID")
 @click.option("--bcfliftover", default=False, is_flag=True, help="Input from BCFtools liftover")
-def main(config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid, bcfliftover):
+def main(
+    config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid, bcfliftover
+):
     cm = ConfigurationManager(config_file=config_file, root_path=output)
     log_file = cm.log_file_path
 
@@ -113,7 +135,13 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
         pid = True
     if input_file_path.exists():
         sm = SumstatsManager(
-            input_file_path.as_posix(), input_file_format, input_file_separator, study_label, formatbook_file_path, pid, bcfliftover
+            input_file_path.as_posix(),
+            input_file_format,
+            input_file_separator,
+            study_label,
+            formatbook_file_path,
+            pid,
+            bcfliftover,
         )
     else:
         msg = f"{input_file_path} input file not found"
@@ -166,9 +194,8 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
                 sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]
                 snp_split = sm.mysumstats.data["SNPID"].str.split(":", expand=True)
                 prev_split = sm.mysumstats.data["PREVIOUS_ID_GWASLAB"].str.split(":", expand=True)
-                sm.mysumstats.data["FLIPPED"] = (
-                    (snp_split.iloc[:, -2] != prev_split.iloc[:, -2]) &
-                    (snp_split.iloc[:, -1] != prev_split.iloc[:, -1])
+                sm.mysumstats.data["FLIPPED"] = (snp_split.iloc[:, -2] != prev_split.iloc[:, -2]) & (
+                    snp_split.iloc[:, -1] != prev_split.iloc[:, -1]
                 )
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
@@ -224,11 +251,11 @@ def main(config_file, input_file, input_file_format, input_file_separator, study
                 sm.mysumstats.meta["gwaslab"]["study_name"] = study_name
                 sm.mysumstats.infer_build()
                 output_path = str(Path(workspace_path, input_file_stem))
-                gl_params["float_formats"] = sm.float_dict_custom(gl_params)                 
+                gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "write_same_input_format":
                 output_path = str(Path(workspace_path, input_file_stem))
-                gl_params["float_formats"] = sm.float_dict_custom(gl_params)  
+                gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
             elif step == "qq_manhattan_plots":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))

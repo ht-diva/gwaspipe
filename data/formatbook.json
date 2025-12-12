@@ -199,7 +199,6 @@
             "format_cite_name": "pvar",
             "format_separator": "\t",
             "format_na": ".",
-            "format_comment": "#",
             "format_header": true,
             "format_col_order": [
                 "POS",
@@ -215,6 +214,7 @@
             "last_check_date": "20231124"
         },
         "format_dict": {
+            "#CHROM": "CHR",
             "POS": "POS",
             "ID": "SNPID",
             "REF": "NEA",
@@ -1170,9 +1170,9 @@
             "format_name": "finngen",
             "format_source_1": "https://finngen.gitbook.io/documentation/data-description",
             "format_version": "R12 (Q4 2024)",
-            "format_cite_name": "FINNGEN_R12",            
+            "format_cite_name": "FINNGEN_R12",
             "format_separator": "\t",
-            "format_header": true,     
+            "format_header": true,
             "format_na": null,
             "format_col_order": [
                 "#chrom",
@@ -1193,7 +1193,7 @@
         },
         "format_dict": {
             "#chrom": "CHR",
-            "pos": "POS",           
+            "pos": "POS",
             "ref": "NEA",
             "alt": "EA",
             "rsids": "rsID",
@@ -1201,7 +1201,7 @@
             "pval": "P",
             "mlogp": "MLOG10P",
             "beta": "BETA",
-            "sebeta": "SE", 
+            "sebeta": "SE",
             "af_alt": "EAF",
             "af_alt_cases": "EAF_CASE",
             "af_alt_controls": "EAF_CONTROL"
@@ -1242,7 +1242,7 @@
             "format_name": "literature_rev",
             "format_separator": "\t",
             "format_version": "V1",
-            "format_header": true,     
+            "format_header": true,
             "format_na": null,
             "format_col_order": [
                 "pqtlID",
