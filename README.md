@@ -1,6 +1,6 @@
 # GWASPipe
 
-A Python tool, based on [GWASLab](https://cloufield.github.io/gwaslab/), for assembling a computational pipeline to standardise, QC, harmonise, convert and plot summary statistics in genetic association studies (GWAS).
+**GWASPipe** is a specialized Python-based software designed to streamline the management of **genetic association study data** by automating complex workflows. The tool functions as a **computational pipeline** that allows researchers to perform essential tasks such as **quality control, standardization, and visualization** of summary statistics. Users can interact with the program through a **command-line interface**, utilizing customizable **YAML configuration files** to tailor the data processing to their specific needs. By integrating powerful libraries like [GWASLab](https://cloufield.github.io/gwaslab/) and pandas, the project provides a robust framework for **harmonizing genomic information** across different file formats and study types.
 
 ### Table of Contents
 
