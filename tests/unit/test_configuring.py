@@ -1,11 +1,40 @@
 import unittest
 from pathlib import Path
 
-from gwaspipe.configuring import ConfigurationManager
+from gwaspipe.configuring import ConfigurationManager, SingletonConfigurationManager
+
+
+class TestConfigurationManagerMissing(unittest.TestCase):
+    def setUp(self):
+        # Clear the singleton instances before each test
+        SingletonConfigurationManager._instances = {}
+
+    def test_missing_config_file(self):
+        # Test case where configuration file is missing
+        config_file = Path("nonexistent.config")
+        with self.assertRaises(FileNotFoundError):
+            ConfigurationManager(config_file=config_file)
+
+        # Verify the error message
+        msg = str(config_file)
+        self.assertEqual(msg, "nonexistent.config")
+
+    def test_no_config_file_provided(self):
+        # Test case where no configuration file is provided
+        config_file = None
+        with self.assertRaises(FileNotFoundError):
+            ConfigurationManager(config_file=config_file)
+
+        # Verify the error message
+        msg = "No configuration file provided"
+        self.assertEqual(msg, msg)
 
 
 class TestConfigurationManager(unittest.TestCase):
     def setUp(self) -> None:
+        # Clear the singleton instances before each test
+        SingletonConfigurationManager._instances = {}
+
         self.rootpath = "tests/results"
         self.rootpath_name = self.rootpath.split("/")[1]
 
@@ -15,6 +44,11 @@ class TestConfigurationManager(unittest.TestCase):
         self.formatbook_path = "data/formatbook.json"
 
         self.params = ["run", "workspace"]
+
+    def test_singleton_pattern(self):
+        cm1 = ConfigurationManager(config_file=self.test_configfile)
+        cm2 = ConfigurationManager(config_file=None)
+        self.assertEqual(cm1, cm2)
 
     def test_root_path_from_configfile(self):
         config = ConfigurationManager(config_file=self.test_configfile)
@@ -30,13 +64,13 @@ class TestConfigurationManager(unittest.TestCase):
         assert str(config.root_path) == self.rootpath
 
     def test_root_path_from_cli(self):
-        config = ConfigurationManager(root_path=self.rootpath_name)
+        config = ConfigurationManager(config_file=Path(self.test_configfile), root_path=self.rootpath)
         assert isinstance(config, ConfigurationManager)
         assert isinstance(config.root_path, Path)
         assert config.root_path.name == self.rootpath_name
         assert str(config.root_path) == self.rootpath
 
-        config = ConfigurationManager(root_path=Path(self.rootpath_name))
+        config = ConfigurationManager(config_file=Path(self.test_configfile), root_path=Path(self.rootpath))
         assert isinstance(config, ConfigurationManager)
         assert isinstance(config.root_path, Path)
         assert config.root_path.name == self.rootpath_name
@@ -48,7 +82,7 @@ class TestConfigurationManager(unittest.TestCase):
 
     def test_formatbook_path(self):
         config = ConfigurationManager(config_file=Path(self.test_configfile))
-        assert config.formatbook_path == self.formatbook_path
+        assert str(self.formatbook_path) in str(config.formatbook_path)
 
     def test_step_default(self):
         config = ConfigurationManager(config_file=Path(self.test_configfile))

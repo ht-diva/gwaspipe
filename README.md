@@ -1,7 +1,7 @@
 # GWASPipe
 
-**GWASPipe** is a specialized Python-based software designed to streamline the management of **genetic association study data** by automating complex workflows. The tool functions as a **computational pipeline** that allows researchers to perform essential tasks such as **quality control, standardization, and visualization** of summary statistics. Users can interact with the program through a **command-line interface**, utilizing customizable **YAML configuration files** to tailor the data processing to their specific needs. By integrating powerful libraries like [GWASLab](https://cloufield.github.io/gwaslab/) and pandas, the project provides a robust framework for **harmonizing genomic information** across different file formats and study types.
-
+**GWASPipe** is a Python-based tool that streamlines the management of **genetic association study data** by automating complex workflows. The tool serves as a **computational pipeline** that enables researchers to perform essential tasks such as **quality control, standardization, and visualization** of summary statistics. Users interact with the program via a **command-line interface**, using customizable **YAML configuration files** to tailor data processing to their specific needs.
+GWASPipe composes reusable processing steps (normalization, allele harmonization, filtering, QC metrics, plotting) using established libraries such as [GWASLab](https://cloufield.github.io/gwaslab/) and pandas, producing cleaned, analysis-ready summary files along with QC reports and figures—making multi-study harmonization reproducible, efficient, and less error-prone.
 ### Table of Contents
 
 *   [Requirements](#requirements)
@@ -39,7 +39,7 @@ You can use one of the following ways for installing Gwaspipe.
 3.  Activate it: `conda activate gwaspipe`
 4.  Install gwaspipe: `make install`
 
-This will install snakemake into an isolated software environment
+This will install gwaspipe into an isolated software environment
 
 5.  Run the tool: `gwaspipe --help`
 
@@ -58,14 +58,16 @@ GWASPipe provides a command-line interface (CLI) for easy usage. You can customi
 
 The CLI takes the following arguments:
 
-*   `-c` or `--config`: Path to the configuration file
-*   `-i` or `--input`: Path to the summary statistics file
-*   `-f` or `--format`: Format of the input file (vcf, gwaslab, regenie, fastgwa, ldsc, fuma, pickle, metal_het)
-*   `-o` or `--output`: Path where results should be saved
-*   `-s` or `--input_file_separator`: Input file separator
-*   `-q` or `--quiet`: Set log verbosity
-*   `--study_label`: Input study label, valid only for VCF files
-*   `--pid`: Preserve ID
+* `-c` or `--config_file`: Path to the configuration file
+* `-i` or `--input_file`: Path to the summary statistics file
+* `-b` or `--formatbook_file`: Formatbook file path
+* `-f` or `--input_file_format`: Format of the input file (plink_pvar, literature_rev, gtex, gwascatalog_hm_custom, ssf_custom, finngen, vcf, decode, gwaslab, regenie, regenie_gene, fastgwa, ldsc, fuma, pickle, metal_het, auto)
+* `-o` or `--output`: Path where results should be saved
+* `-s` or `--input_file_separator`: Input file separator
+* `-q` or `--quiet`: Set log verbosity
+* `--study_label`: Input study label, valid only for VCF files
+* `--pid`: Preserve ID - When enabled, creates additional columns in the output to preserve original SNP identifiers
+* `--bcfliftover`: Input from BCFtools liftover
 
 Example configuration files are provided in the `examples` directory.
 
