@@ -195,7 +195,7 @@
         "meta_data": {
             "format_name": "plink_pvar",
             "format_source_1": "https://www.cog-genomics.org/plink/2.0/formats#pvar",
-            "format_version": "20231124",
+            "format_version": "20221124",
             "format_cite_name": "pvar",
             "format_separator": "\t",
             "format_na": ".",
@@ -734,7 +734,7 @@
                 "COHORT",
                 "TECHNOLOGY"
             ],
-            "format_version": "20231220_v4"
+            "format_version": "20251125"
         },
         "format_dict": {
             "PQTLID": "PQTLID",

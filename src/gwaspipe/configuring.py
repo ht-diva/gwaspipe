@@ -3,6 +3,19 @@ from pathlib import Path
 from ruamel.yaml import YAML
 
 
+def load_config(config_file: Path | str | None) -> dict:
+    """Load and validate configuration from YAML file."""
+    if not config_file:
+        raise FileNotFoundError("No configuration file provided")
+
+    config_path = Path(config_file)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file {config_path.name} not found")
+
+    with config_path.open("r") as file:
+        return YAML(typ="safe").load(file)
+
+
 class SingletonConfigurationManager(type):
     """Metaclass."""
 
@@ -15,37 +28,47 @@ class SingletonConfigurationManager(type):
 
 
 class ConfigurationManager(metaclass=SingletonConfigurationManager):
-    def __init__(self, config_file: Path | str = None, root_path: Path | str = None):
-        self.config = None
-        config_path = Path(config_file) if config_file else None
-        if config_path:
-            if config_path.exists():
-                yaml = YAML(typ="safe")
-                with open(config_file, "r") as file:
-                    self.config = yaml.load(file)
-            else:
-                msg = (
-                    f"Configuration file {config_path.name} not found"
-                    if config_path
-                    else "No configuration file provided"
-                )
-                raise FileNotFoundError(msg)
+    def __init__(
+        self,
+        config_file: Path | str | None = None,
+        formatbook_file: Path | str | None = None,
+        root_path: Path | str | None = None,
+    ):
+        self.config = load_config(config_file)
         self._root_path = Path(root_path) if root_path else None
+        self._formatbook_path = Path(formatbook_file) if formatbook_file else None
 
     @property
-    def root_path(self):
-        root_path = self._root_path or self.config["root_path"]
+    def filename_settings(self):
+        mask = self.config.get("filename_mask", [True, False])
+        sep = self.config.get("filename_sep", ".")
+        return mask, sep
+
+    @property
+    def formatbook_path(self) -> Path:
+        custom_path = Path(self._formatbook_path) if self._formatbook_path else None
+        return (
+            custom_path if custom_path and custom_path.exists() else Path(__file__).parent / "data" / "formatbook.json"
+        )
+
+    @property
+    def log_file_path(self) -> Path:
+        return Path(self.root_path, self.config["log_filename"])
+
+    @property
+    def root_path(self) -> Path:
+        root_path = self._root_path or self.config.get("root_path")
+        if not root_path:
+            raise ValueError("Root path not specified in config or constructor")
+
         path = Path(root_path)
         path.parent.mkdir(exist_ok=True)
         return path
 
     @property
-    def log_file_path(self):
-        return Path(self.root_path, self.config["log_filename"])
-
-    @property
-    def formatbook_path(self):
-        return self.config["formatbook_path"]
+    def run_sequence(self):
+        run_sequence = tuple(self.config.get("run_sequence", {}).values())
+        return run_sequence
 
     @property
     def steps(self):
@@ -61,14 +84,3 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
         gl_params = step_config.get("gl_params", {})
 
         return params, gl_params
-
-    @property
-    def run_sequence(self):
-        run_sequence = tuple(self.config.get("run_sequence", {}).values())
-        return run_sequence
-
-    @property
-    def filename_settings(self):
-        mask = self.config.get("filename_mask", [True, False])
-        sep = self.config.get("filename_sep", ".")
-        return mask, sep

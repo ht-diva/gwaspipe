@@ -40,7 +40,6 @@ tag:
 test:
 	@echo "Testing"
 	pytest --cov=src/gwaspipe/ tests
-	python -m unittest discover -s tests
 
 uninstall:
 	pip uninstall -y ${APPNAME}

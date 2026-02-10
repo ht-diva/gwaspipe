@@ -8,6 +8,7 @@ import numpy as np
 
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.utils import __appname__, logger
+from gwaspipe.util_order_alleles import order_alleles as order_alleles_func
 
 
 class SumstatsManager:
@@ -60,10 +61,43 @@ class SumstatsManager:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
 
+    def order_alleles(
+        self,
+        ea="EA",
+        nea="NEA",
+        status="STATUS",
+        chrom="CHR",
+        pos="POS",
+        snpid="SNPID",
+        format_snpid=True,
+        n_cores=1,
+        mode="v",
+        flipallelestats_args=None,
+        verbose=True,
+    ):
+        if flipallelestats_args is None:
+            flipallelestats_args = {}
+        self.mysumstats.data = order_alleles_func(
+            sumstats_data=self.mysumstats.data,
+            log=self.mysumstats.log,
+            ea=ea,
+            nea=nea,
+            status=status,
+            chrom=chrom,
+            pos=pos,
+            snpid=snpid,
+            format_snpid=format_snpid,
+            n_cores=n_cores,
+            mode=mode,
+            flipallelestats_args=flipallelestats_args,
+            verbose=verbose,
+        )
+
 
 @click.command()
 @click.option("-c", "--config_file", required=True, help="Configuration file path")
 @click.option("-i", "--input_file", required=True, help="Input file path")
+@click.option("-b", "--formatbook_file", default=None, help="Formatbook file path")
 @click.option(
     "-f",
     "--input_file_format",
@@ -86,6 +120,7 @@ class SumstatsManager:
             "fuma",
             "pickle",
             "metal_het",
+            "auto",
         ],
         case_sensitive=False,
     ),
@@ -98,9 +133,18 @@ class SumstatsManager:
 @click.option("--pid", default=False, is_flag=True, help="Preserve ID")
 @click.option("--bcfliftover", default=False, is_flag=True, help="Input from BCFtools liftover")
 def main(
-    config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid, bcfliftover
+    config_file,
+    input_file,
+    formatbook_file,
+    input_file_format,
+    input_file_separator,
+    study_label,
+    output,
+    quiet,
+    pid,
+    bcfliftover,
 ):
-    cm = ConfigurationManager(config_file=config_file, root_path=output)
+    cm = ConfigurationManager(config_file=config_file, formatbook_file=formatbook_file, root_path=output)
     log_file = cm.log_file_path
 
     if quiet:
@@ -238,7 +282,7 @@ def main(
                     fp.write(f"{input_file_name}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
             elif step == "sort_alphabetically":
                 n_cores = gl_params.get("n_cores", 1)
-                sm.mysumstats.order_alleles(n_cores=n_cores)
+                sm.order_alleles(n_cores=n_cores)
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
