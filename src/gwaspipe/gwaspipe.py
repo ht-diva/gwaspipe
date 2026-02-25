@@ -8,8 +8,9 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from gwaspipe import __appname__, __version__, logger, Log
 from gwaspipe.configuring import ConfigurationManager
-from gwaspipe.utils import __appname__, logger, Log
+from gwaspipe.util_infer_build import infergenomebuild
 from gwaspipe.util_order_alleles import order_alleles as order_alleles_func
 
 
@@ -63,6 +64,11 @@ class SumstatsManager:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
 
+    def infer_genome_build(self, verbose=True, **kwargs):
+        self.mysumstats.data, self.mysumstats.meta["gwaslab"]["genome_build"] = infergenomebuild(
+            self.mysumstats.data, log=self.mysumstats.log, verbose=verbose, **kwargs
+        )
+
     def order_alleles(
         self,
         ea="EA",
@@ -96,6 +102,7 @@ class SumstatsManager:
         )
 
 
+@click.version_option(version=__version__)
 @click.command()
 @click.option("-c", "--config_file", required=True, help="Configuration file path")
 @click.option("-i", "--input_file", required=True, help="Input file path")
@@ -248,9 +255,8 @@ def main(
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
             elif step == "infer_build":
-                sm.mysumstats.infer_build()
-                # genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
-                # text = f"\nInferred genome build: {genome_build}\n"
+                # sm.mysumstats.infer_build()
+                sm.infer_genome_build()
             elif step == "fill_data":
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
@@ -305,24 +311,24 @@ def main(
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
             elif step == "check_ambiguous_snps":
                 df = sm.mysumstats.data
-                
+
                 # True duplicated SNPs
-                dup_mask = df.duplicated(subset=["SNPID","BETA","SE","MLOG10P"], keep="first")
+                dup_mask = df.duplicated(subset=["SNPID", "BETA", "SE", "MLOG10P"], keep="first")
                 nr_dup_snps = dup_mask.sum()
                 if nr_dup_snps > 0:
                     df = df.loc[~dup_mask].reset_index(drop=True)
 
                 # Ambiguous SNPs
                 snp_groups = df.groupby("SNPID")
-                ambiguous_mask = snp_groups[["BETA","SE","MLOG10P"]].transform("nunique").gt(1).any(axis=1)
+                ambiguous_mask = snp_groups[["BETA", "SE", "MLOG10P"]].transform("nunique").gt(1).any(axis=1)
                 nr_ambiguous_snps = ambiguous_mask.sum()
                 if nr_ambiguous_snps > 0:
                     df.loc[ambiguous_mask].to_csv(Path(workspace_path, "ambiguous_snps.tsv"), sep="\t", index=False)
                     df = df.loc[~ambiguous_mask].reset_index(drop=True)
-                
+
                 # Multi-allelic SNPs
-                nr_multiallelic_snps = df.groupby(["CHR","POS"])["SNPID"].transform("nunique").gt(1).sum()
-                nr_multiallelic_loci = df.groupby(["CHR","POS"])["SNPID"].nunique().gt(1).sum()
+                nr_multiallelic_snps = df.groupby(["CHR", "POS"])["SNPID"].transform("nunique").gt(1).sum()
+                nr_multiallelic_loci = df.groupby(["CHR", "POS"])["SNPID"].nunique().gt(1).sum()
 
                 sm.mysumstats.data = df
                 if pid:
@@ -331,7 +337,7 @@ def main(
                     output_path = str(Path(workspace_path, input_file_stem))
                 log_path = output_path + ".dup.log"
                 log = Log(log_path)
-                log.write(f"Start to check ambiguous variants...")
+                log.write("Start to check ambiguous variants...")
                 log.write(f" -Dropped duplicated SNPs: {nr_dup_snps}")
                 log.write(f" -Dropped ambiguous SNPs: {nr_ambiguous_snps}")
                 log.write(f" -Multi-allelic SNPs: {nr_multiallelic_snps}")
@@ -373,6 +379,7 @@ def main(
         with open(log_path_main, "a") as f:
             f.write(dup_content)
         Path(log_path_dup).unlink()
+
 
 if __name__ == "__main__":
     main()

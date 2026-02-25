@@ -3,7 +3,6 @@ External module for order_alleles functionality.
 Other dependencies are imported from gwaslab modules.
 """
 
-import gc
 from functools import partial, cmp_to_key
 from multiprocessing import Pool
 
@@ -11,7 +10,8 @@ import numpy as np
 import pandas as pd
 from gwaslab.bd_common_data import _maketrans
 from gwaslab.g_Log import Log
-from gwaslab.g_vchange_status import vchange_status
+
+# from gwaslab.g_vchange_status import vchange_status
 from gwaslab.g_version import _get_version
 from gwaslab.qc_fix_sumstats import (
     start_to,
@@ -20,7 +20,11 @@ from gwaslab.qc_fix_sumstats import (
     flip_by_sign,
     flip_by_subtract,
     flip_by_inverse,
+    _df_split,
+    finished,
 )
+
+from gwaspipe.util_change_status import vchange_status_from_version_3_6_16 as vchange_status
 
 
 # ===== Custom allele sorting =====
@@ -139,21 +143,6 @@ def _orderalleles_status_vec(sumstats, nea="NEA", ea="EA", status="STATUS", verb
     return sumstats
 
 
-# ===== Helper functions =====
-
-
-def _df_split(dataframe, n):
-    """Split dataframe into n parts for parallel processing."""
-    k, m = divmod(len(dataframe), n)
-    return [dataframe.iloc[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n)]
-
-
-def _finished(log, verbose, end_line):
-    """Log completion and cleanup."""
-    log.write("Finished {}.".format(end_line), verbose=verbose)
-    gc.collect()
-
-
 # ===== Allele ordering functions =====
 
 
@@ -206,7 +195,7 @@ def vectorizedorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS",
     ############################################################################################
 
     max_len = 4  # chosen threshold for vectorized processing
-    condition = (sumstats[nea].str.len() <= max_len) * (sumstats[ea].str.len() <= max_len)
+    condition = (sumstats[nea].str.len() <= max_len) & (sumstats[ea].str.len() <= max_len)
 
     log.write(f" -Changing status for records with ( len(NEA) <= {max_len} and len(EA) <= {max_len} )", verbose=verbose)
     sumstats_cond = sumstats[condition]
@@ -218,7 +207,7 @@ def vectorizedorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS",
     out = _orderalleles_status_vec(sumstats_not_cond, nea=nea, ea=ea, status=status, verbose=verbose, log=log)
     sumstats.loc[~condition, status] = out[status]
 
-    _finished(log, verbose, _end_line)
+    finished(log, verbose, _end_line)
 
     return sumstats
 
@@ -300,7 +289,7 @@ def parallelorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS", n
     else:
         sumstats = orderalleles_status(sumstats, ea=ea, nea=nea, status=status, verbose=verbose, log=log)
 
-    _finished(log, verbose, _end_line)
+    finished(log, verbose, _end_line)
     return sumstats
 
 
@@ -511,7 +500,7 @@ def _flip_allele_statistics(
     if not if_stats_flipped:
         log.write(" -No statistics have been changed.")
 
-    _finished(log, verbose, _end_line)
+    finished(log, verbose, _end_line)
     return sumstats
 
 

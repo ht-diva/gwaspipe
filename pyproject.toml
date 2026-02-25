@@ -15,7 +15,7 @@ dependencies = [
     "pandas (>=2.2.3,<3.0.0)",
     "pyarrow (>=18.1.0,<24.0.0)",
     "numpy (>=1.26.0,<2.0.0)",
-    "gwaslab (==3.4.48)",
+    "gwaslab (==3.4.49)",
 ]
 
 [project.scripts]
