@@ -40,16 +40,16 @@ class ConfigurationManager(metaclass=SingletonConfigurationManager):
 
     @property
     def filename_settings(self):
-        mask = self.config.get("filename_mask", [True, False])
-        sep = self.config.get("filename_sep", ".")
+        mask = self.config.get("filename_mask")
+        sep = self.config.get("filename_sep")
         return mask, sep
 
     @property
     def formatbook_path(self) -> Path:
-        custom_path = Path(self._formatbook_path) if self._formatbook_path else None
-        return (
-            custom_path if custom_path and custom_path.exists() else Path(__file__).parent / "data" / "formatbook.json"
-        )
+        """Return the path to the formatbook file, using default if custom path doesn't exist."""
+        if self._formatbook_path and self._formatbook_path.exists():
+            return self._formatbook_path
+        return Path(__file__).parent / "data" / "formatbook.json"
 
     @property
     def log_file_path(self) -> Path:

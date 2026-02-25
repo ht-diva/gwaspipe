@@ -135,7 +135,7 @@ class SumstatsManager:
     ),
     help="Input file format",
 )
-@click.option("-o", "--output", help="Path where results should be saved")
+@click.option("-o", "--output", help="Path where results should be saved", default="results")
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
 @click.option("--study_label", default="Study", help="Input study label, valid only for VCF files")
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
