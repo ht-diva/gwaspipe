@@ -6,8 +6,9 @@ import click
 import gwaslab as gl
 import numpy as np
 
+from gwaspipe import __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
-from gwaspipe.utils import __appname__, logger
+from gwaspipe.util_infer_build import infergenomebuild
 from gwaspipe.util_order_alleles import order_alleles as order_alleles_func
 
 
@@ -61,6 +62,11 @@ class SumstatsManager:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
 
+    def infer_genome_build(self, verbose=True, **kwargs):
+        self.mysumstats.data, self.mysumstats.meta["gwaslab"]["genome_build"] = infergenomebuild(
+            self.mysumstats.data, log=self.mysumstats.log, verbose=verbose, **kwargs
+        )
+
     def order_alleles(
         self,
         ea="EA",
@@ -94,6 +100,7 @@ class SumstatsManager:
         )
 
 
+@click.version_option(version=__version__)
 @click.command()
 @click.option("-c", "--config_file", required=True, help="Configuration file path")
 @click.option("-i", "--input_file", required=True, help="Input file path")
@@ -246,9 +253,8 @@ def main(
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
             elif step == "infer_build":
-                sm.mysumstats.infer_build()
-                # genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
-                # text = f"\nInferred genome build: {genome_build}\n"
+                # sm.mysumstats.infer_build()
+                sm.infer_genome_build()
             elif step == "fill_data":
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
