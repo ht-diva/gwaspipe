@@ -103,5 +103,5 @@ class TestConfigurationManager(unittest.TestCase):
     def test_filename_settings_default(self):
         config = ConfigurationManager(config_file=Path(self.test_configfile))
         mask, sep = config.filename_settings
-        assert tuple(mask) == tuple([True, False])
-        assert sep == "."
+        assert mask is None
+        assert sep is None
