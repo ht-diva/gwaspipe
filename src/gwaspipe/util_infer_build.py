@@ -42,10 +42,10 @@ def infergenomebuild(
 
     log.write(" -Loading Hapmap3 variants data...", verbose=verbose)
     hapmap3_ref_19 = pd.read_csv(
-        data_path_19, sep="\s+", usecols=["#CHROM", "POS"], dtype={"#CHROM": "string", "POS": "string"}
+        data_path_19, sep=r"\s+", usecols=["#CHROM", "POS"], dtype={"#CHROM": "string", "POS": "string"}
     )
     hapmap3_ref_38 = pd.read_csv(
-        data_path_38, sep="\s+", usecols=["#CHROM", "POS"], dtype={"#CHROM": "string", "POS": "string"}
+        data_path_38, sep=r"\s+", usecols=["#CHROM", "POS"], dtype={"#CHROM": "string", "POS": "string"}
     )
 
     log.write(" -CHR:POS will be used for matching...", verbose=verbose)
