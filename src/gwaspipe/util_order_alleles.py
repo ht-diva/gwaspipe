@@ -11,7 +11,6 @@ import pandas as pd
 from gwaslab.bd_common_data import _maketrans
 from gwaslab.g_Log import Log
 
-# from gwaslab.g_vchange_status import vchange_status
 from gwaslab.g_version import _get_version
 from gwaslab.qc_fix_sumstats import (
     start_to,
@@ -33,7 +32,7 @@ from gwaspipe.util_change_status import vchange_status_from_version_3_6_16 as vc
 def custom_alleles_sort(strings):
     """
     Sort alleles using custom comparison:
-    - Single-length alleles come before multi-length
+    - Single-length alleles come after multi-length
     - Alphabetical ordering within same length
 
     Parameters
