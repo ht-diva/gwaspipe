@@ -8,8 +8,8 @@ import numpy as np
 
 from gwaspipe import __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
-from gwaspipe.util_infer_build import infergenomebuild
-from gwaspipe.util_order_alleles import order_alleles as order_alleles_func
+from gwaspipe.utils.infer_build import infergenomebuild
+from gwaspipe.order_alleles import order_alleles as order_alleles_func
 
 
 class SumstatsManager:
