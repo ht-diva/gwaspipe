@@ -1,15 +1,51 @@
+"""
+Genome build inference utility.
+
+This module provides functionality to infer genome build version using HapMap3 SNPs.
+"""
+
 import pandas as pd
 from gwaslab.g_Log import Log
 from gwaslab.qc_fix_sumstats import finished
 from gwaslab.qc_fix_sumstats import start_to
 
-from gwaspipe.util_change_status import vchange_status_from_version_3_6_16 as vchange_status
+from gwaspipe.utils.change_status import vchange_status_from_version_3_6_16 as vchange_status
 import importlib.resources
 
 
 def infergenomebuild(
     sumstats, status="STATUS", chrom="CHR", pos="POS", ea="EA", nea="NEA", build="19", verbose=True, log=Log()
 ):
+    """
+    Infer genome build version using HapMap3 SNPs.
+
+    Parameters
+    ----------
+    sumstats : pd.DataFrame
+        Summary statistics dataframe
+    status : str, default='STATUS'
+        Column name for status
+    chrom : str, default='CHR'
+        Column name for chromosome
+    pos : str, default='POS'
+        Column name for position
+    ea : str, default='EA'
+        Column name for effect allele
+    nea : str, default='NEA'
+        Column name for non-effect allele
+    build : str, default='19'
+        Default build to use
+    verbose : bool, default=True
+        Whether to print verbose output
+    log : Log
+        Log object for recording operations
+
+    Returns
+    -------
+    tuple
+        (sumstats, inferred_build) where sumstats is the updated dataframe and
+        inferred_build is the inferred genome build version
+    """
     ##start function with col checking##########################################################
     _start_line = "infer genome build version using hapmap3 SNPs"
     _end_line = "inferring genome build version using hapmap3 SNPs"
@@ -28,7 +64,7 @@ def infergenomebuild(
         **_must_args,
     )
     if not is_enough_info:
-        return sumstats
+        return sumstats, "Unknown"
     ############################################################################################
 
     inferred_build = "Unknown"

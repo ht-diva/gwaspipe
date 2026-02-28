@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from gwaspipe.util_order_alleles import (
+from gwaspipe.order_alleles import (
     custom_alleles_sort,
     vectorizedorderalleles_status,
     orderalleles_status,
