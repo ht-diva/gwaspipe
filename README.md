@@ -79,7 +79,7 @@ The `gwaspipe.order_alleles` module provides comprehensive allele ordering funct
 ```python
 from gwaspipe.order_alleles import order_alleles
 import pandas as pd
-from gwaslab.g_Log import Log
+from gwaslab.info.g_Log import Log
 
 # Basic usage
 df = pd.DataFrame({
