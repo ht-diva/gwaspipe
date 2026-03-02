@@ -3,11 +3,12 @@ Main order_alleles function.
 """
 
 import pandas as pd
-from gwaslab.g_Log import Log
+from gwaslab.info.g_Log import Log
 
 from .vectorized import vectorizedorderalleles_status, parallelorderalleles_status
 from .snpid import parallelbuildsnpid
-from .stats import _flip_allele_statistics
+
+from gwaslab.g_Sumstats import _flip_allele_stats
 
 
 def order_alleles(
@@ -22,7 +23,6 @@ def order_alleles(
     format_snpid=True,
     n_cores=1,
     mode="v",
-    flipallelestats_args=None,
     verbose=True,
 ):
     """
@@ -61,8 +61,6 @@ def order_alleles(
         Number of cores for parallel processing
     mode : str, default='v'
         Processing mode: 'v' for vectorized or 'p' for parallel
-    flipallelestats_args : dict, optional
-        Additional arguments to pass to flipallelestats
     verbose : bool, default=True
         Whether to print verbose output
 
@@ -98,9 +96,6 @@ def order_alleles(
     if log is None:
         log = Log()
 
-    if flipallelestats_args is None:
-        flipallelestats_args = {}
-
     # Step 1: set status to appropriate value if ea and nea should be flipped
     # based on custom ordering
     if mode == "v":
@@ -129,10 +124,7 @@ def order_alleles(
     sumstats_data[ea] = pd.Categorical(sumstats_data[ea], categories=categories)
     sumstats_data[nea] = pd.Categorical(sumstats_data[nea], categories=categories)
 
-    # Use default flipallelestats args optimized for speed
-    base_flipallelestats_args = dict(reverse_compl=False, flip_ref=True, flip_ref_und=False, flip_rev_strand=False)
-    base_flipallelestats_args.update(flipallelestats_args)
-    sumstats_data = _flip_allele_statistics(sumstats_data, log=log, **base_flipallelestats_args)
+    sumstats_data = _flip_allele_stats(sumstats_data, log=log)
 
     # Step 3: build snpid based on the new allele order -> chr:pos:ea:nea
     if format_snpid:

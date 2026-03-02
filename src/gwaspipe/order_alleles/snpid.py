@@ -3,8 +3,8 @@ SNP ID building functionality.
 """
 
 import pandas as pd
-from gwaslab.g_Log import Log
-from gwaslab.qc_fix_sumstats import _df_split
+from gwaslab.info.g_Log import Log
+from gwaslab.qc.qc_fix_sumstats import _df_split
 from functools import partial
 from multiprocessing import Pool
 

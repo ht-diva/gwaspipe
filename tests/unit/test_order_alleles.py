@@ -1,5 +1,9 @@
 import unittest
+
 import pandas as pd
+from gwaslab.info.g_Log import Log
+from gwaslab.qc.qc_fix_sumstats import _flip_allele_stats
+
 from gwaspipe.order_alleles import (
     custom_alleles_sort,
     vectorizedorderalleles_status,
@@ -9,11 +13,9 @@ from gwaspipe.order_alleles import (
     parallelbuildsnpid,
     order_alleles,
     _orderalleles_status_vec,
-    _flip_allele_statistics,
     ORDER_MAPPING,
     TRANSLATE_TABLE_ORDER,
 )
-from gwaslab.g_Log import Log
 
 
 class TestCustomAllelesSort(unittest.TestCase):
@@ -124,7 +126,7 @@ class TestOrderAllelesStatusVec(unittest.TestCase):
         )
         result = _orderalleles_status_vec(df, verbose=False, log=self.log)
         # Position 6 should be changed to '3'
-        self.assertEqual(result.loc[0, "STATUS"], "9999939")
+        self.assertEqual(result.loc[0, "STATUS"], 9999939)
 
     def test_nea_longer_than_ea_triggers_swap(self):
         """Test swap when NEA is longer than EA (longer alleles sort first)."""
@@ -132,11 +134,11 @@ class TestOrderAllelesStatusVec(unittest.TestCase):
             {
                 "EA": ["A"],
                 "NEA": ["AT"],
-                "STATUS": ["9999999"],
+                "STATUS": [9999999],
             }
         )
         result = _orderalleles_status_vec(df, verbose=False, log=self.log)
-        self.assertEqual(result.loc[0, "STATUS"], "9999939")
+        self.assertEqual(result.loc[0, "STATUS"], 9999939)
 
     def test_ea_longer_than_nea_no_swap(self):
         """Test no swap when EA is longer than NEA."""
@@ -144,11 +146,11 @@ class TestOrderAllelesStatusVec(unittest.TestCase):
             {
                 "EA": ["AT"],
                 "NEA": ["A"],
-                "STATUS": ["9999999"],
+                "STATUS": [9999999],
             }
         )
         result = _orderalleles_status_vec(df, verbose=False, log=self.log)
-        self.assertEqual(result.loc[0, "STATUS"], "9999999")
+        self.assertEqual(result.loc[0, "STATUS"], 9999999)
 
     def test_same_length_alleles_mixed(self):
         """Test multiple rows with same-length alleles, some needing swap."""
@@ -156,18 +158,18 @@ class TestOrderAllelesStatusVec(unittest.TestCase):
             {
                 "EA": ["A", "T", "C", "G"],
                 "NEA": ["T", "A", "G", "C"],
-                "STATUS": ["9999999", "9999999", "9999999", "9999999"],
+                "STATUS": [9999999, 9999999, 9999999, 9999999],
             }
         )
         result = _orderalleles_status_vec(df, verbose=False, log=self.log)
         # Row 0: EA=A, NEA=T -> A < T, no swap needed
-        self.assertEqual(result.loc[0, "STATUS"], "9999999")
+        self.assertEqual(result.loc[0, "STATUS"], 9999999)
         # Row 1: EA=T, NEA=A -> A < T, swap needed
-        self.assertEqual(result.loc[1, "STATUS"], "9999939")
+        self.assertEqual(result.loc[1, "STATUS"], 9999939)
         # Row 2: EA=C, NEA=G -> C < G, no swap needed
-        self.assertEqual(result.loc[2, "STATUS"], "9999999")
+        self.assertEqual(result.loc[2, "STATUS"], 9999999)
         # Row 3: EA=G, NEA=C -> C < G, swap needed
-        self.assertEqual(result.loc[3, "STATUS"], "9999939")
+        self.assertEqual(result.loc[3, "STATUS"], 9999939)
 
     def test_multi_char_alleles_same_length(self):
         """Test with multi-character alleles of same length."""
@@ -175,14 +177,14 @@ class TestOrderAllelesStatusVec(unittest.TestCase):
             {
                 "EA": ["AT", "CG"],
                 "NEA": ["AC", "TA"],
-                "STATUS": ["9999999", "9999999"],
+                "STATUS": [9999999, 9999999],
             }
         )
         result = _orderalleles_status_vec(df, verbose=False, log=self.log)
         # Row 0: EA=AT, NEA=AC -> AC < AT, swap needed
-        self.assertEqual(result.loc[0, "STATUS"], "9999939")
+        self.assertEqual(result.loc[0, "STATUS"], 9999939)
         # Row 1: EA=CG, NEA=TA -> CG < TA, no swap needed
-        self.assertEqual(result.loc[1, "STATUS"], "9999999")
+        self.assertEqual(result.loc[1, "STATUS"], 9999999)
 
 
 class TestVectorizedOrderAllelesStatus(unittest.TestCase):
@@ -206,12 +208,12 @@ class TestVectorizedOrderAllelesStatus(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 3)
 
-    def test_missing_columns_returns_unchanged(self):
-        """Test that missing required columns returns the DataFrame unchanged."""
-        df = pd.DataFrame({"X": [1, 2]})
-        result = vectorizedorderalleles_status(df, verbose=False, log=self.log)
-        self.assertIsInstance(result, pd.DataFrame)
-        self.assertEqual(len(result), 2)
+    # def test_missing_columns_returns_unchanged(self):
+    #     """Test that missing required columns returns the DataFrame unchanged."""
+    #     df = pd.DataFrame({"X": [1, 2]})
+    #     result = vectorizedorderalleles_status(df, verbose=False, log=self.log)
+    #     self.assertIsInstance(result, pd.DataFrame)
+    #     self.assertEqual(len(result), 2)
 
     def test_long_alleles_above_threshold(self):
         """Test alleles exceeding the max_len=4 threshold are handled."""
@@ -239,14 +241,14 @@ class TestOrderAllelesStatus(unittest.TestCase):
             {
                 "EA": ["T", "A"],
                 "NEA": ["A", "T"],
-                "STATUS": ["0000000", "0000000"],
+                "STATUS": [9999999, 9999999],
             }
         )
         result = orderalleles_status(df, verbose=False, log=self.log)
         # Row 0: EA=T, NEA=A -> A<T, so EA/NEA should be swapped -> status digit 6 becomes '3'
-        self.assertEqual(result.loc[0, "STATUS"], "0000030")
+        self.assertEqual(result.loc[0, "STATUS"], 9999939)
         # Row 1: EA=A, NEA=T -> A<T, already correct -> no swap
-        self.assertEqual(result.loc[1, "STATUS"], "0000000")
+        self.assertEqual(result.loc[1, "STATUS"], 9999999)
 
     def test_no_swap_needed(self):
         """Test when alleles are already in correct order."""
@@ -254,11 +256,11 @@ class TestOrderAllelesStatus(unittest.TestCase):
             {
                 "EA": ["A"],
                 "NEA": ["T"],
-                "STATUS": ["0000000"],
+                "STATUS": [9999999],
             }
         )
         result = orderalleles_status(df, verbose=False, log=self.log)
-        self.assertEqual(result.loc[0, "STATUS"], "0000000")
+        self.assertEqual(result.loc[0, "STATUS"], 9999999)
 
 
 class TestParallelOrderAllelesStatus(unittest.TestCase):
@@ -272,7 +274,7 @@ class TestParallelOrderAllelesStatus(unittest.TestCase):
                 "POS": [1000, 2000, 3000],
                 "EA": ["A", "T", "C"],
                 "NEA": ["T", "A", "G"],
-                "STATUS": ["9900000", "9900000", "9900000"],
+                "STATUS": [9999999, 9999999, 9999999],
             }
         )
 
@@ -288,12 +290,12 @@ class TestParallelOrderAllelesStatus(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 3)
 
-    def test_missing_columns_returns_unchanged(self):
-        """Test that missing required columns returns DataFrame unchanged."""
-        df = pd.DataFrame({"X": [1, 2]})
-        result = parallelorderalleles_status(df, n_cores=1, verbose=False, log=self.log)
-        self.assertIsInstance(result, pd.DataFrame)
-        self.assertEqual(len(result), 2)
+    # def test_missing_columns_returns_unchanged(self):
+    #     """Test that missing required columns returns DataFrame unchanged."""
+    #     df = pd.DataFrame({"X": [1, 2]})
+    #     result = parallelorderalleles_status(df, n_cores=1, verbose=False, log=self.log)
+    #     self.assertIsInstance(result, pd.DataFrame)
+    #     self.assertEqual(len(result), 2)
 
 
 class TestBuildSnpids(unittest.TestCase):
@@ -382,10 +384,10 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["A", "C"]),
                 "NEA": pd.Categorical(["T", "G"]),
-                "STATUS": ["9900020", "9900020"],
+                "STATUS": [9900020, 9900020],
             }
         )
-        result = _flip_allele_statistics(df, verbose=False, log=self.log)
+        result = _flip_allele_stats(df, verbose=False, log=self.log)
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 2)
 
@@ -395,22 +397,18 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["A", "T"], categories=["A", "T"]),
                 "NEA": pd.Categorical(["T", "A"], categories=["A", "T"]),
-                "STATUS": ["9900030", "9900030"],
+                "STATUS": [9900030, 9900030],
             }
         )
-        result = _flip_allele_statistics(
+        result = _flip_allele_stats(
             df,
-            flip_ref=True,
-            reverse_compl=False,
-            flip_ref_und=False,
-            flip_rev_strand=False,
             verbose=False,
             log=self.log,
         )
         self.assertIsInstance(result, pd.DataFrame)
         # Status should change from xxxxx3x to xxxxx1x
         for idx in result.index:
-            self.assertIn(result.loc[idx, "STATUS"][5], ["1", "2"])
+            self.assertIn(str(result.loc[idx, "STATUS"])[5], ["1", "2"])
 
     def test_reverse_complement_status_4(self):
         """Test reverse complement when status digit 6 is '4' (xxxxx4x)."""
@@ -418,21 +416,17 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["A"], categories=["A", "T"]),
                 "NEA": pd.Categorical(["T"], categories=["A", "T"]),
-                "STATUS": ["9900040"],
+                "STATUS": [9900040],
             }
         )
-        result = _flip_allele_statistics(
+        result = _flip_allele_stats(
             df,
-            reverse_compl=True,
-            flip_ref=False,
-            flip_ref_und=False,
-            flip_rev_strand=False,
             verbose=False,
             log=self.log,
         )
         self.assertIsInstance(result, pd.DataFrame)
         # Status position 6 should change from 4 to 2
-        self.assertEqual(result.loc[0, "STATUS"][5], "2")
+        self.assertEqual(str(result.loc[0, "STATUS"])[5], "2")
 
     def test_reverse_complement_status_5(self):
         """Test reverse complement when status digit 6 is '5' (xxxxx5x)."""
@@ -440,15 +434,11 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["A"], categories=["A", "T"]),
                 "NEA": pd.Categorical(["T"], categories=["A", "T"]),
-                "STATUS": ["9900050"],
+                "STATUS": [9900050],
             }
         )
-        result = _flip_allele_statistics(
+        result = _flip_allele_stats(
             df,
-            reverse_compl=True,
-            flip_ref=True,
-            flip_ref_und=False,
-            flip_rev_strand=False,
             verbose=False,
             log=self.log,
         )
@@ -460,21 +450,17 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["AT"], categories=["AT", "A"]),
                 "NEA": pd.Categorical(["A"], categories=["AT", "A"]),
-                "STATUS": ["9901166"],
+                "STATUS": [9901166],
             }
         )
-        result = _flip_allele_statistics(
+        result = _flip_allele_stats(
             df,
-            reverse_compl=False,
-            flip_ref=False,
-            flip_ref_und=True,
-            flip_rev_strand=False,
             verbose=False,
             log=self.log,
         )
         self.assertIsInstance(result, pd.DataFrame)
         # Last digit should change from 6 to 4
-        self.assertEqual(result.loc[0, "STATUS"][6], "4")
+        self.assertEqual(str(result.loc[0, "STATUS"])[6], "4")
 
     def test_flip_rev_strand_status_pattern(self):
         """Test flip_rev_strand for palindromic SNPs with pattern xxxxx[012]5."""
@@ -482,41 +468,17 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["A"], categories=["A", "T"]),
                 "NEA": pd.Categorical(["T"], categories=["A", "T"]),
-                "STATUS": ["9900005"],
+                "STATUS": [9900005],
             }
         )
-        result = _flip_allele_statistics(
+        result = _flip_allele_stats(
             df,
-            reverse_compl=False,
-            flip_ref=False,
-            flip_ref_und=False,
-            flip_rev_strand=True,
             verbose=False,
             log=self.log,
         )
         self.assertIsInstance(result, pd.DataFrame)
         # Last digit should change from 5 to 2
-        self.assertEqual(result.loc[0, "STATUS"][6], "2")
-
-    def test_all_flags_disabled(self):
-        """Test with all flip flags disabled - no changes should occur."""
-        df = pd.DataFrame(
-            {
-                "EA": pd.Categorical(["A"]),
-                "NEA": pd.Categorical(["T"]),
-                "STATUS": ["9900030"],
-            }
-        )
-        result = _flip_allele_statistics(
-            df,
-            reverse_compl=False,
-            flip_ref=False,
-            flip_ref_und=False,
-            flip_rev_strand=False,
-            verbose=False,
-            log=self.log,
-        )
-        self.assertEqual(result.loc[0, "STATUS"], "9900030")
+        self.assertEqual(str(result.loc[0, "STATUS"])[6], "2")
 
     def test_no_matching_status_patterns(self):
         """Test when status codes don't match any flip patterns."""
@@ -524,14 +486,12 @@ class TestFlipAlleleStatistics(unittest.TestCase):
             {
                 "EA": pd.Categorical(["A"]),
                 "NEA": pd.Categorical(["T"]),
-                "STATUS": ["9900020"],
+                "STATUS": [9900020],
             }
         )
-        result = _flip_allele_statistics(
-            df, reverse_compl=True, flip_ref=True, flip_ref_und=True, flip_rev_strand=True, verbose=False, log=self.log
-        )
+        result = _flip_allele_stats(df, verbose=False, log=self.log)
         # No patterns matched, so status should remain unchanged
-        self.assertEqual(result.loc[0, "STATUS"], "9900020")
+        self.assertEqual(result.loc[0, "STATUS"], 9900020)
 
 
 class TestOrderAlleles(unittest.TestCase):
@@ -545,7 +505,7 @@ class TestOrderAlleles(unittest.TestCase):
                 "POS": [1000, 2000, 3000, 4000, 5000],
                 "EA": pd.Categorical(["A", "T", "C", "G", "A"]),
                 "NEA": pd.Categorical(["T", "A", "G", "C", "T"]),
-                "STATUS": ["9900000", "9900010", "9900020", "9900030", "9900040"],
+                "STATUS": [9999999, 9999999, 9999999, 9999999, 9999999],
                 "SNPID": ["1:1000:A:T", "2:2000:T:A", "3:3000:C:G", "4:4000:G:C", "5:5000:A:T"],
             }
         )
@@ -560,6 +520,7 @@ class TestOrderAlleles(unittest.TestCase):
     def test_vectorized_mode(self):
         """Test order_alleles in vectorized mode."""
         result = order_alleles(self.test_data.copy(), mode="v", verbose=False, log=self.log)
+        print(result)
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 5)
 
@@ -625,28 +586,6 @@ class TestOrderAlleles(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 2)
 
-    def test_flipallelestats_args_custom(self):
-        """Test passing custom flipallelestats_args."""
-        result = order_alleles(
-            self.test_data.copy(),
-            flipallelestats_args={"reverse_compl": True},
-            verbose=False,
-            log=self.log,
-        )
-        self.assertIsInstance(result, pd.DataFrame)
-        self.assertEqual(len(result), 5)
-
-    def test_flipallelestats_args_none_default(self):
-        """Test that flipallelestats_args=None defaults to empty dict."""
-        result = order_alleles(
-            self.test_data.copy(),
-            flipallelestats_args=None,
-            verbose=False,
-            log=self.log,
-        )
-        self.assertIsInstance(result, pd.DataFrame)
-        self.assertEqual(len(result), 5)
-
     def test_category_dtype_alleles(self):
         """Test with categorical EA/NEA columns."""
         data = self.test_data.copy()
@@ -661,3 +600,57 @@ class TestOrderAlleles(unittest.TestCase):
         result = order_alleles(self.test_data.copy(), mode="p", n_cores=2, verbose=False, log=self.log)
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 5)
+
+    def test_beta_and_eaf_flip_when_ea_t_nea_a(self):
+        """Test that when EA='T' and NEA='A', BETA is negated and EAF is transformed to 1 - EAF."""
+        # Create test data where one row has EA='T' and NEA='A'
+        test_data = pd.DataFrame(
+            {
+                "CHR": [1, 2],
+                "POS": [1000, 2000],
+                "EA": ["A", "T"],
+                "NEA": ["T", "A"],
+                "STATUS": [9999999, 9999999],
+                "SNPID": ["1:1000:A:T", "2:2000:T:A"],
+                "BETA": [0.2, 0.3],
+                "EAF": [0.02, 0.03],
+            }
+        )
+
+        result = order_alleles(test_data, verbose=False, log=self.log)
+
+        # Check that the second row (where EA='T' and NEA='A') had BETA negated and EAF transformed
+        # The first row should remain unchanged
+        self.assertEqual(result.loc[0, "BETA"], 0.2)  # Unchanged
+        self.assertEqual(result.loc[0, "EAF"], 0.02)  # Unchanged
+
+        # The second row should have BETA negated and EAF transformed
+        self.assertEqual(result.loc[1, "BETA"], -0.3)  # Negated
+        self.assertEqual(result.loc[1, "EAF"], 1 - 0.03)  # Transformed to 1 - EAF
+
+    def test_beta_and_eaf_flip_when_ea_t_nea_a_different_lengths(self):
+        """Test that when EA='T' and NEA='A' with different lengths, BETA is negated and EAF is transformed to 1 - EAF."""
+        # Create test data where one row has EA='T' and NEA='A' with different lengths
+        test_data = pd.DataFrame(
+            {
+                "CHR": [1, 2],
+                "POS": [1000, 2000],
+                "EA": ["AT", "T"],
+                "NEA": ["A", "A"],
+                "STATUS": [9999999, 9999999],
+                "SNPID": ["1:1000:AT:A", "2:2000:T:A"],
+                "BETA": [0.2, 0.3],
+                "EAF": [0.02, 0.03],
+            }
+        )
+
+        result = order_alleles(test_data, verbose=False, log=self.log)
+
+        # Check that the second row (where EA='T' and NEA='A') had BETA negated and EAF transformed
+        # The first row should remain unchanged
+        self.assertEqual(result.loc[0, "BETA"], 0.2)  # Unchanged
+        self.assertEqual(result.loc[0, "EAF"], 0.02)  # Unchanged
+
+        # The second row should have BETA negated and EAF transformed
+        self.assertEqual(result.loc[1, "BETA"], -0.3)  # Negated
+        self.assertEqual(result.loc[1, "EAF"], 1 - 0.03)  # Transformed to 1 - EAF

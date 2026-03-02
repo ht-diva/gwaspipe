@@ -13,7 +13,8 @@ from .vectorized import (
     _orderalleles_status_vec,
 )
 from .snpid import build_snpids, parallelbuildsnpid
-from .stats import _flip_allele_statistics
+
+# from .stats import _flip_allele_statistics
 from .constants import ORDER_MAPPING, TRANSLATE_TABLE_ORDER
 from .main import order_alleles
 
@@ -26,7 +27,7 @@ __all__ = [
     "parallelbuildsnpid",
     "order_alleles",
     "_orderalleles_status_vec",
-    "_flip_allele_statistics",
+    # "_flip_allele_statistics",
     "ORDER_MAPPING",
     "TRANSLATE_TABLE_ORDER",
 ]
