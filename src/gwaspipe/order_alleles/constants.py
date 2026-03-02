@@ -2,7 +2,7 @@
 Constants for order_alleles module.
 """
 
-from gwaslab.bd_common_data import _maketrans
+from gwaslab.bd.bd_common_data import _maketrans
 
 # Create translation table for fast vectorized ordering
 ORDER_MAPPING = {el: chr(i + 1) for i, el in enumerate(sorted(["A", "T", "C", "G"], reverse=False))}

@@ -1,66 +1,115 @@
 # GWASPipe
 
-**GWASPipe** is a Python-based tool that streamlines the management of **genetic association study data** by automating complex workflows. The tool serves as a **computational pipeline** that enables researchers to perform essential tasks such as **quality control, standardization, and visualization** of summary statistics. Users interact with the program via a **command-line interface**, using customizable **YAML configuration files** to tailor data processing to their specific needs.
-GWASPipe composes reusable processing steps (normalization, allele harmonization, filtering, QC metrics, plotting) using established libraries such as [GWASLab](https://cloufield.github.io/gwaslab/) and pandas, producing cleaned, analysis-ready summary files along with QC reports and figures—making multi-study harmonization reproducible, efficient, and less error-prone.
+**GWASPipe** is a Python-based computational pipeline that streamlines the management and processing of **genome-wide association study (GWAS) summary statistics**. It automates complex workflows for quality control, standardization, and visualization, making multi-study harmonization more reproducible, efficient, and less error-prone.
+
+### Key Features
+
+- **Modular Architecture**: Organized into reusable components (`order_alleles`, `utils`)
+- **Automated Workflows**: Handles normalization, allele harmonization, filtering, and QC metrics
+- **Flexible Configuration**: Uses YAML configuration files for customizable processing
+- **Comprehensive Reporting**: Generates QC reports and visualizations
+- **High Performance**: Leverages parallel processing and optimized algorithms
+
 ### Table of Contents
 
-*   [Requirements](#requirements)
-*   [Getting Started](#getting-started)
-*   [Usage](#usage)
-*   [Example Configuration Files](#example-configuration-files)
-*   [Contributing](#contributing)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Module Documentation](#module-documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Requirements
 
-To use GWASPipe, you'll need:
+- **Python**: 3.11 or higher
+- **Dependencies**: See `pyproject.toml` for complete list
+- **Key Packages**:
+  - `gwaslab` - Core GWAS processing library
+  - `pandas`, `numpy` - Data manipulation
+  - `click`, `cloup` - Command-line interface
+  - `loguru` - Advanced logging
+  - `ruamel.yaml` - YAML configuration
 
-*   Python 3.10 or higher
-*   The following dependencies installed:
-    *   `click` for command-line interface
-    *   `cloup` for file handling and metadata management
-    *   `loguru` for logging
-    *   `ruamel-yaml` for YAML parsing and generation
-    *   `pandas` for data manipulation and analysis
-    *   `pyarrow` for high-performance data processing
-    *   `numpy` for numerical computations
-    *   `matplotlib` for plotting
-    *   `gwaslab` for handling sumstats
+## Installation
 
-see [pyproject.toml](environment.yml)
+### Via Conda/Mamba (Recommended)
 
-## Documentation
+```bash
+# Clone the repository
+git clone https://github.com/ht-diva/gwaspipe.git
+cd gwaspipe
 
-You can use one of the following ways for installing Gwaspipe.
+# Create and activate environment
+conda env create -f environment_docker.yml
+conda activate gwaspipe
 
-### Installation via Conda/Mamba
+# Install package
+make install
+```
 
-1.  Clone the repository using Git: `git clone https://github.com/ht-diva/gwaspipe.git`
-2.  Create a conda environment: `conda env create -f environment.yml`
-3.  Activate it: `conda activate gwaspipe`
-4.  Install gwaspipe: `make install`
+### Via Docker
 
-This will install gwaspipe into an isolated software environment
+```bash
+# Pull the Docker image
+docker pull ghcr.io/ht-diva/gwaspipe:latest
 
-5.  Run the tool: `gwaspipe --help`
+# Run container
+docker run -v $(pwd):/data ghcr.io/ht-diva/gwaspipe gwaspipe --help
+```
 
-### Docker image
+## Quick Start
 
-The Linux OS image is available from the github packages repository:
-[Docker image](https://github.com/ht-diva/gwaspipe/pkgs/container/gwaspipe)
+Process GWAS summary statistics with a single command:
+
+```bash
+gwaspipe \
+  -c examples/config_sumstats_harmonization.yml \
+  -i examples/input_data.tsv.gz \
+  -f regenie \
+  -o results/
+```
+
+## Module Documentation
+
+### Order Alleles Module
+
+The `gwaspipe.order_alleles` module provides comprehensive allele ordering functionality:
+
+```python
+from gwaspipe.order_alleles import order_alleles
+import pandas as pd
+from gwaslab.g_Log import Log
+
+# Basic usage
+df = pd.DataFrame({
+    'CHR': [1, 2, 3],
+    'POS': [1000, 2000, 3000],
+    'EA': ['A', 'T', 'C'],
+    'NEA': ['T', 'A', 'G'],
+    'STATUS': [9999999, 9999999, 9999999]
+})
+
+log = Log()
+result = order_alleles(df, log=log)
+```
 
 
-### Getting Started
+## Configuration
 
-To get started with GWASPipe have a look at the [getting started guide](docs/getting_started.md)
+GWASPipe uses YAML configuration files to define processing pipelines. See [Getting Started Guide](docs/getting_started.md) for detailed configuration examples.
 
-### Contributing
+## Contributing
 
-We welcome contributions to GWASPipe! If you'd like to contribute, please follow these guidelines:
+We welcome contributions! Please follow these steps:
 
-1.  Fork the repository on GitHub: `https://github.com/your-username/gwaspipe.git`
-2.  Create a new branch for your changes: `git checkout -b feature/your-feature-name`
-3.  Make your changes and commit them: `git add . && git commit -m "Your commit message"`
-4.  Push your changes to the remote repository: `git push origin feature/your-feature-name`
-5.  Open a pull request on GitHub to propose your changes
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/your-feature`
+3. **Make changes** and add tests
+4. **Commit changes**: `git commit -m "Add feature description"`
+5. **Push branch**: `git push origin feature/your-feature`
+6. **Open a Pull Request**
 
-We appreciate your contributions and look forward to seeing GWASPipe grow!
+## License
+
+GWASPipe is released under the [MIT License](LICENSE).

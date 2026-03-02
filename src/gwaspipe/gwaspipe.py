@@ -10,7 +10,6 @@ import pyarrow.parquet as pq
 
 from gwaspipe import __appname__, __version__, logger, Log
 from gwaspipe.configuring import ConfigurationManager
-from gwaspipe.utils.infer_build import infergenomebuild
 from gwaspipe.order_alleles import order_alleles as order_alleles_func
 
 
@@ -64,11 +63,6 @@ class SumstatsManager:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
 
-    def infer_genome_build(self, verbose=True, **kwargs):
-        self.mysumstats.data, self.mysumstats.meta["gwaslab"]["genome_build"] = infergenomebuild(
-            self.mysumstats.data, log=self.mysumstats.log, verbose=verbose, **kwargs
-        )
-
     def order_alleles(
         self,
         ea="EA",
@@ -80,11 +74,8 @@ class SumstatsManager:
         format_snpid=True,
         n_cores=1,
         mode="v",
-        flipallelestats_args=None,
         verbose=True,
     ):
-        if flipallelestats_args is None:
-            flipallelestats_args = {}
         self.mysumstats.data = order_alleles_func(
             sumstats_data=self.mysumstats.data,
             log=self.mysumstats.log,
@@ -97,7 +88,6 @@ class SumstatsManager:
             format_snpid=format_snpid,
             n_cores=n_cores,
             mode=mode,
-            flipallelestats_args=flipallelestats_args,
             verbose=verbose,
         )
 
@@ -254,9 +244,9 @@ def main(
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
+
             elif step == "infer_build":
-                # sm.mysumstats.infer_build()
-                sm.infer_genome_build()
+                sm.mysumstats.infer_build()
             elif step == "fill_data":
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":

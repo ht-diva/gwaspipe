@@ -2,12 +2,14 @@
 Vectorized allele ordering functionality.
 """
 
+from functools import partial
+from multiprocessing import Pool
+
 import numpy as np
 import pandas as pd
-from gwaslab.g_Log import Log
-
-from gwaspipe.utils.change_status import vchange_status_from_version_3_6_16 as vchange_status
-from gwaslab.qc_fix_sumstats import start_to, finished
+from gwaslab.info.g_Log import Log
+from gwaslab.info.g_vchange_status import vchange_status
+from gwaslab.qc.qc_fix_sumstats import _df_split
 
 from .constants import TRANSLATE_TABLE_ORDER
 from .sorting import custom_alleles_sort
@@ -118,20 +120,6 @@ def vectorizedorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS",
     _start_function = ".order_alleles()"
     _must_args = {}
 
-    is_enough_info = start_to(
-        sumstats=sumstats,
-        log=log,
-        verbose=verbose,
-        start_line=_start_line,
-        end_line=_end_line,
-        start_cols=_start_cols,
-        start_function=_start_function,
-        **_must_args,
-    )
-    if not is_enough_info:
-        return sumstats
-    ############################################################################################
-
     max_len = 4  # chosen threshold for vectorized processing
     condition = (sumstats[nea].str.len() <= max_len) & (sumstats[ea].str.len() <= max_len)
 
@@ -145,7 +133,7 @@ def vectorizedorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS",
     out = _orderalleles_status_vec(sumstats_not_cond, nea=nea, ea=ea, status=status, verbose=verbose, log=log)
     sumstats.loc[~condition, status] = out[status]
 
-    finished(log, verbose, _end_line)
+    log.write(_end_line, verbose=verbose)
 
     return sumstats
 
@@ -179,15 +167,13 @@ def orderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS", verbose=T
         to_sort = [ea, nea]
         allele1, allele2 = custom_alleles_sort(to_sort)
         if allele1 != ea:
-            status = status[:5] + "3" + status[6:]
+            status_str = str(status)
+            status = int(status_str[:5] + "3" + status_str[6:])
         return status
 
     out = sumstats[[ea, nea, status]].apply(lambda x: status_ordering(x.iloc[0], x.iloc[1], x.iloc[2]), axis=1)
 
-    if sumstats[status].dtype.name == "category":
-        sumstats[status] = pd.Categorical(out.values, categories=sumstats[status].cat.categories)
-    else:
-        sumstats[status] = out.values
+    sumstats[status] = out.values
 
     return sumstats
 
@@ -218,8 +204,6 @@ def parallelorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS", n
     pd.DataFrame
         Updated dataframe with reordered status codes
     """
-    from functools import partial
-    from multiprocessing import Pool
 
     ##start function with col checking##########################################################
     _start_line = "change status based on custom allele order"
@@ -228,24 +212,7 @@ def parallelorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS", n
     _start_function = ".order_alleles()"
     _must_args = {}
 
-    is_enough_info = start_to(
-        sumstats=sumstats,
-        log=log,
-        verbose=verbose,
-        start_line=_start_line,
-        end_line=_end_line,
-        start_cols=_start_cols,
-        start_function=_start_function,
-        n_cores=n_cores,
-        **_must_args,
-    )
-    if not is_enough_info:
-        return sumstats
-    ############################################################################################
-
     if n_cores > 1:
-        from gwaslab.qc_fix_sumstats import _df_split
-
         df_split = _df_split(sumstats, n_cores)
         pool = Pool(n_cores)
         map_func = partial(orderalleles_status, ea=ea, nea=nea, status=status, verbose=verbose, log=log)
@@ -255,5 +222,5 @@ def parallelorderalleles_status(sumstats, nea="NEA", ea="EA", status="STATUS", n
     else:
         sumstats = orderalleles_status(sumstats, ea=ea, nea=nea, status=status, verbose=verbose, log=log)
 
-    finished(log, verbose, _end_line)
+    log.write(_end_line, verbose=verbose)
     return sumstats
