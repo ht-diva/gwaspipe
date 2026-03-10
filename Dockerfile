@@ -28,7 +28,7 @@ RUN . /opt/conda/etc/profile.d/conda.sh && \
 # -----------------
 # Primary container
 # -----------------
-FROM python:3.11
+FROM python:3.12
 # copy over the generated environment
 COPY --from=builder /opt/env /opt/env
 
