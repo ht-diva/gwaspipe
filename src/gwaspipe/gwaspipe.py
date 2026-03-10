@@ -52,6 +52,24 @@ class SumstatsManager:
         if bcfliftover:
             self.mysumstats.data.drop(columns=["rsID"], inplace=True)
 
+    def fill_mlog10p(self, gl_params):
+        """
+        Fill the MLOG10P column in the sumstats data using P column
+        if it is not already present and the P column is present, and the extreme argument is False.
+        This function replicates the original behaviour of GWASLab, before v4, when the argument extreme is False.
+        The current default in v4 is to always use the extreme methods.
+        """
+        if (
+            not gl_params.get("extreme")
+            and "MLOG10P" in gl_params.get("to_fill", [])
+            and "P" in self.mysumstats.data.columns
+        ):
+            from gwaslab.util.util_in_fill_data import fill_mlog10p as _fill_mlog10p
+
+            self.mysumstats.log.write("Starting to fill the MLOG10P column")
+            _fill_mlog10p(self.mysumstats, self.mysumstats.log)
+            self.mysumstats.log.write("Finished filling the MLOG10P column")
+
     def float_dict_custom(self, gp):
         """Preserve the number of decimals from the input data (statistics)"""
         float_dict = {}
@@ -248,6 +266,7 @@ def main(
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
             elif step == "fill_data":
+                sm.fill_mlog10p(gl_params)
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
                 sm.mysumstats.harmonize(**gl_params)
