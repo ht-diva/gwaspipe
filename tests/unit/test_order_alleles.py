@@ -5,16 +5,16 @@ from gwaslab.info.g_Log import Log
 from gwaslab.qc.qc_fix_sumstats import _flip_allele_stats
 
 from gwaspipe.order_alleles import (
-    custom_alleles_sort,
-    vectorizedorderalleles_status,
-    orderalleles_status,
-    parallelorderalleles_status,
-    build_snpids,
-    parallelbuildsnpid,
-    order_alleles,
-    _orderalleles_status_vec,
     ORDER_MAPPING,
     TRANSLATE_TABLE_ORDER,
+    _orderalleles_status_vec,
+    build_snpids,
+    custom_alleles_sort,
+    order_alleles,
+    orderalleles_status,
+    parallelbuildsnpid,
+    parallelorderalleles_status,
+    vectorizedorderalleles_status,
 )
 
 

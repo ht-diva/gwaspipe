@@ -8,7 +8,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from gwaspipe import __appname__, __version__, logger, Log
+from gwaspipe import Log, __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.order_alleles import order_alleles as order_alleles_func
 

@@ -1,10 +1,8 @@
 import importlib.metadata
 
-
 from cloup import Context, HelpFormatter, HelpTheme, Style
 from gwaslab.info.g_Log import Log
 from loguru import logger as a_logger
-
 
 __all__ = ["__appname__", "__version__", "formatter_settings", "context_settings", "logger", "Log"]
 

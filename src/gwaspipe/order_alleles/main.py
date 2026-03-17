@@ -3,12 +3,11 @@ Main order_alleles function.
 """
 
 import pandas as pd
+from gwaslab.g_Sumstats import _flip_allele_stats
 from gwaslab.info.g_Log import Log
 
-from .vectorized import vectorizedorderalleles_status, parallelorderalleles_status
 from .snpid import parallelbuildsnpid
-
-from gwaslab.g_Sumstats import _flip_allele_stats
+from .vectorized import parallelorderalleles_status, vectorizedorderalleles_status
 
 
 def order_alleles(

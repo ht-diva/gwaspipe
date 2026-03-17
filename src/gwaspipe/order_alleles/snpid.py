@@ -2,11 +2,12 @@
 SNP ID building functionality.
 """
 
+from functools import partial
+from multiprocessing import Pool
+
 import pandas as pd
 from gwaslab.info.g_Log import Log
 from gwaslab.qc.qc_fix_sumstats import _df_split
-from functools import partial
-from multiprocessing import Pool
 
 
 def build_snpids(sumstats, chrom="CHR", pos="POS", nea="NEA", ea="EA", snpid="SNPID"):
