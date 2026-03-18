@@ -8,8 +8,9 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from gwaspipe import Log, __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
-from gwaspipe.utils import __appname__, logger, Log
+from gwaspipe.order_alleles import order_alleles as order_alleles_func
 
 
 class SumstatsManager:
@@ -51,6 +52,24 @@ class SumstatsManager:
         if bcfliftover:
             self.mysumstats.data.drop(columns=["rsID"], inplace=True)
 
+    def fill_mlog10p(self, gl_params):
+        """
+        Fill the MLOG10P column in the sumstats data using P column
+        if it is not already present and the P column is present, and the extreme argument is False.
+        This function replicates the original behaviour of GWASLab, before v4, when the argument extreme is False.
+        The current default in v4 is to always use the extreme methods.
+        """
+        if (
+            not gl_params.get("extreme")
+            and "MLOG10P" in gl_params.get("to_fill", [])
+            and "P" in self.mysumstats.data.columns
+        ):
+            from gwaslab.util.util_in_fill_data import fill_mlog10p as _fill_mlog10p
+
+            self.mysumstats.log.write("Starting to fill the MLOG10P column")
+            _fill_mlog10p(self.mysumstats, self.mysumstats.log)
+            self.mysumstats.log.write("Finished filling the MLOG10P column")
+
     def float_dict_custom(self, gp):
         """Preserve the number of decimals from the input data (statistics)"""
         float_dict = {}
@@ -62,10 +81,40 @@ class SumstatsManager:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
 
+    def order_alleles(
+        self,
+        ea="EA",
+        nea="NEA",
+        status="STATUS",
+        chrom="CHR",
+        pos="POS",
+        snpid="SNPID",
+        format_snpid=True,
+        n_cores=1,
+        mode="v",
+        verbose=True,
+    ):
+        self.mysumstats.data = order_alleles_func(
+            sumstats_data=self.mysumstats.data,
+            log=self.mysumstats.log,
+            ea=ea,
+            nea=nea,
+            status=status,
+            chrom=chrom,
+            pos=pos,
+            snpid=snpid,
+            format_snpid=format_snpid,
+            n_cores=n_cores,
+            mode=mode,
+            verbose=verbose,
+        )
 
+
+@click.version_option(version=__version__)
 @click.command()
 @click.option("-c", "--config_file", required=True, help="Configuration file path")
 @click.option("-i", "--input_file", required=True, help="Input file path")
+@click.option("-b", "--formatbook_file", default=None, help="Formatbook file path")
 @click.option(
     "-f",
     "--input_file_format",
@@ -88,21 +137,31 @@ class SumstatsManager:
             "fuma",
             "pickle",
             "metal_het",
+            "auto",
         ],
         case_sensitive=False,
     ),
     help="Input file format",
 )
-@click.option("-o", "--output", help="Path where results should be saved")
+@click.option("-o", "--output", help="Path where results should be saved", default="results")
 @click.option("-s", "--input_file_separator", default="\t", help="Input file separator")
 @click.option("--study_label", default="Study", help="Input study label, valid only for VCF files")
 @click.option("-q", "--quiet", default=False, is_flag=True, help="Set log verbosity")
 @click.option("--pid", default=False, is_flag=True, help="Preserve ID")
 @click.option("--bcfliftover", default=False, is_flag=True, help="Input from BCFtools liftover")
 def main(
-    config_file, input_file, input_file_format, input_file_separator, study_label, output, quiet, pid, bcfliftover
+    config_file,
+    input_file,
+    formatbook_file,
+    input_file_format,
+    input_file_separator,
+    study_label,
+    output,
+    quiet,
+    pid,
+    bcfliftover,
 ):
-    cm = ConfigurationManager(config_file=config_file, root_path=output)
+    cm = ConfigurationManager(config_file=config_file, formatbook_file=formatbook_file, root_path=output)
     log_file = cm.log_file_path
 
     if quiet:
@@ -203,11 +262,11 @@ def main(
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
+
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
-                # genome_build = sm.mysumstats.meta["gwaslab"]["genome_build"]
-                # text = f"\nInferred genome build: {genome_build}\n"
             elif step == "fill_data":
+                sm.fill_mlog10p(gl_params)
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
                 sm.mysumstats.harmonize(**gl_params)
@@ -240,7 +299,7 @@ def main(
                     fp.write(f"{input_file_name}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
             elif step == "sort_alphabetically":
                 n_cores = gl_params.get("n_cores", 1)
-                sm.mysumstats.order_alleles(n_cores=n_cores)
+                sm.order_alleles(n_cores=n_cores)
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
@@ -261,24 +320,24 @@ def main(
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
             elif step == "check_ambiguous_snps":
                 df = sm.mysumstats.data
-                
+
                 # True duplicated SNPs
-                dup_mask = df.duplicated(subset=["SNPID","BETA","SE","MLOG10P"], keep="first")
+                dup_mask = df.duplicated(subset=["SNPID", "BETA", "SE", "MLOG10P"], keep="first")
                 nr_dup_snps = dup_mask.sum()
                 if nr_dup_snps > 0:
                     df = df.loc[~dup_mask].reset_index(drop=True)
 
                 # Ambiguous SNPs
                 snp_groups = df.groupby("SNPID")
-                ambiguous_mask = snp_groups[["BETA","SE","MLOG10P"]].transform("nunique").gt(1).any(axis=1)
+                ambiguous_mask = snp_groups[["BETA", "SE", "MLOG10P"]].transform("nunique").gt(1).any(axis=1)
                 nr_ambiguous_snps = ambiguous_mask.sum()
                 if nr_ambiguous_snps > 0:
                     df.loc[ambiguous_mask].to_csv(Path(workspace_path, "ambiguous_snps.tsv"), sep="\t", index=False)
                     df = df.loc[~ambiguous_mask].reset_index(drop=True)
-                
+
                 # Multi-allelic SNPs
-                nr_multiallelic_snps = df.groupby(["CHR","POS"])["SNPID"].transform("nunique").gt(1).sum()
-                nr_multiallelic_loci = df.groupby(["CHR","POS"])["SNPID"].nunique().gt(1).sum()
+                nr_multiallelic_snps = df.groupby(["CHR", "POS"])["SNPID"].transform("nunique").gt(1).sum()
+                nr_multiallelic_loci = df.groupby(["CHR", "POS"])["SNPID"].nunique().gt(1).sum()
 
                 sm.mysumstats.data = df
                 if pid:
@@ -287,7 +346,7 @@ def main(
                     output_path = str(Path(workspace_path, input_file_stem))
                 log_path = output_path + ".dup.log"
                 log = Log(log_path)
-                log.write(f"Start to check ambiguous variants...")
+                log.write("Start to check ambiguous variants...")
                 log.write(f" -Dropped duplicated SNPs: {nr_dup_snps}")
                 log.write(f" -Dropped ambiguous SNPs: {nr_ambiguous_snps}")
                 log.write(f" -Multi-allelic SNPs: {nr_multiallelic_snps}")
@@ -329,6 +388,7 @@ def main(
         with open(log_path_main, "a") as f:
             f.write(dup_content)
         Path(log_path_dup).unlink()
+
 
 if __name__ == "__main__":
     main()

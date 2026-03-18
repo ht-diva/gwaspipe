@@ -1,5 +1,5 @@
 APPNAME=$(shell grep -m 1 name pyproject.toml|cut -f2 -d'"')
-TARGETS=build clean dependencies deploy editable_install install test uninstall
+TARGETS=build clean dependencies deploy editable_install install quickstart test uninstall
 VERSION=$(shell grep version pyproject.toml|cut -f2 -d'"')
 
 all:
@@ -37,10 +37,30 @@ pre-commit:
 tag:
 	git tag v${VERSION}
 
-test:
-	@echo "Testing"
+test: unit-test functional_test_00 functional_test_01
+	@echo "End-to-End tests"
+
+
+unit-test:
+	@echo "Unit Testing"
 	pytest --cov=src/gwaspipe/ tests
-	python -m unittest discover -s tests
+
+functional_test_00:
+	@echo "Functional test 00"
+	gwaspipe \
+	  -c examples/config_sumstats_harmonization.yml \
+	  -i examples/input_data.tsv.gz \
+	  -f regenie \
+	  -o results
+
+functional_test_01:
+	@echo "Functional test 01"
+	gwaspipe \
+	  -c examples/config_sumstats_harmonization.yml \
+	  -i examples/input_data_01.csv.gz \
+	  -f gtex \
+	  -s ',' \
+	  -o results
 
 uninstall:
 	pip uninstall -y ${APPNAME}

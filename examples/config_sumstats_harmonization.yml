@@ -17,11 +17,8 @@ steps:
     params:
       run: True
     gl_params:
-      n_cores: *cores
+      threads: *cores
       normalize: True
-      fixid_args:
-        fixid: True
-        forcefixid: True
   infer_build: # see https://cloufield.github.io/gwaslab/InferBuild/
     params:
       run: True
@@ -29,20 +26,20 @@ steps:
     params:
       run: True
     gl_params:
-      to_fill: ['MLOG10P', 'Z']
+      to_fill: ['MLOG10P']
       overwrite: False
-      extreme: True
+      extreme: False
   harmonize: # see https://cloufield.github.io/gwaslab/Harmonization/
     params:
       run: True
     gl_params:
       basic_check: False
-      n_cores: *cores
+      threads: *cores
   sort_alphabetically:
     params:
       run: True
     gl_params:
-      n_cores: *cores
+      threads: *cores
   write_tsv:
     params:
       run: True
@@ -50,22 +47,20 @@ steps:
       workspace_subfolder: True
     gl_params:
       fmt: "gwaslab"
+      xymt_number: True
       to_csvargs:
         compression:
           method: "gzip"
           compresslevel: 1
           mtime: 1
-      float_formats:
-        BETA: '{:.5f}'
-        SE: '{:.5f}'
-        MLOG10P: '{:.5f}'
-        EAF: '{:.5f}'
 
-# Filename transformation, e.g.: ukb-a-1.vcf.gz
-filename_mask: [ True, False, False]
-filename_sep: '.'
+
+# Filename transformation, e.g.: seq.10000.28.fastGWA
+# use the filename mask to extract elements from the filename to be used in the output filename
+# filename_mask: [ True, True, True, False]
+# filename_sep: '.'
 
 # IO
 root_path: "results"
 log_filename: "gwaspipe.log"
-formatbook_path: "data/formatbook.json"     # fill this var if you want to provide a custom formatbook
+# formatbook_path: "path/to/custom_formatbook.json"     # fill this var if you want to provide a custom formatbook
