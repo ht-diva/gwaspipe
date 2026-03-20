@@ -10,6 +10,7 @@ run_sequence: !!omap
   - 4: 'harmonize'
   - 5: 'sort_alphabetically'
   - 6: 'write_tsv'
+  - 7: 'write_parquet'
 
 
 steps:
@@ -53,7 +54,14 @@ steps:
           method: "gzip"
           compresslevel: 1
           mtime: 1
-
+  write_parquet:
+    params:
+      run: True
+      workspace: "outputs"
+      workspace_subfolder: True
+    gl_params:
+      fmt: "gwaslab"
+      tab_fmt: "parquet"
 
 # Filename transformation, e.g.: seq.10000.28.fastGWA
 # use the filename mask to extract elements from the filename to be used in the output filename

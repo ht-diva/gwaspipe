@@ -309,7 +309,7 @@ def main(
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
-            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa"]:
+            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa", "write_parquet"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
@@ -352,20 +352,6 @@ def main(
                 sm.mysumstats.log.write(f" -Multi-allelic SNPs: {nr_multiallelic_snps}")
                 sm.mysumstats.log.write(f" -Multi-allelic positions: {nr_multiallelic_loci}")
                 sm.mysumstats.log.write(f" -Current Dataframe shape : {len(sm.mysumstats.data)} x {len(sm.mysumstats.data.columns)}")
-            elif step == "write_parquet":
-                df = sm.mysumstats.data
-                table = pa.Table.from_pandas(df, preserve_index=False)
-                output_path = str(Path(workspace_path, input_file_stem))
-                output_path_pq = output_path + ".gwaslab.parquet"
-                pq.write_table(
-                    table,
-                    output_path_pq,
-                    compression="zstd",
-                    use_dictionary=True,
-                    coerce_timestamps="ms",
-                    flavor="spark",
-                )
-                logger.info(f" -Writing sumstats to parquet: {output_path_pq}")
             elif step == "qq_manhattan_plots":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
                 cut = round(-np.log10(gl_params["sig_level"])) + params["dist"]
