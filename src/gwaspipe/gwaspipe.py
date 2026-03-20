@@ -338,7 +338,6 @@ def main(
                 ambiguous_mask = snp_groups[["EAF", "BETA", "SE"]].transform("nunique").gt(1).any(axis=1)
                 nr_ambiguous_snps = ambiguous_mask.sum()
                 if nr_ambiguous_snps > 0:
-                    df.loc[ambiguous_mask].to_csv(Path(workspace_path, "ambiguous_snps.tsv"), sep="\t", index=False)
                     df = df.loc[~ambiguous_mask].reset_index(drop=True)
 
                 # Multi-allelic SNPs
