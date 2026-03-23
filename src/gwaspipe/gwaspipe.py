@@ -235,9 +235,9 @@ def main(
                 inferstrand_args.update({"cache_options": cache_options})
                 gl_params["inferstrand_args"] = inferstrand_args
 
-    # EAF floating format in config 
+    # EAF floating format in config
     if_eaf_float_format = any(
-        y.get('run', False) and 'float_formats' in x and 'EAF' in x.get('float_formats', {})
+        y.get("run", False) and "float_formats" in x and "EAF" in x.get("float_formats", {})
         for step in cm.run_sequence
         if step != "write_parquet"
         for y, x in [cm.step(step)]
@@ -354,7 +354,9 @@ def main(
                 sm.mysumstats.log.write(f" -Dropped ambiguous SNPs: {nr_ambiguous_snps}")
                 sm.mysumstats.log.write(f" -Multi-allelic SNPs: {nr_multiallelic_snps}")
                 sm.mysumstats.log.write(f" -Multi-allelic positions: {nr_multiallelic_loci}")
-                sm.mysumstats.log.write(f" -Current Dataframe shape : {len(sm.mysumstats.data)} x {len(sm.mysumstats.data.columns)}")
+                sm.mysumstats.log.write(
+                    f" -Current Dataframe shape : {len(sm.mysumstats.data)} x {len(sm.mysumstats.data.columns)}"
+                )
             elif step == "qq_manhattan_plots":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
                 cut = round(-np.log10(gl_params["sig_level"])) + params["dist"]
@@ -362,7 +364,6 @@ def main(
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
-
 
 
 if __name__ == "__main__":
