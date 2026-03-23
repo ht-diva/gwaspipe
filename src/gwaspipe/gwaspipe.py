@@ -5,8 +5,6 @@ from pathlib import Path
 import click
 import gwaslab as gl
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 from gwaspipe import __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
@@ -237,8 +235,13 @@ def main(
                 inferstrand_args.update({"cache_options": cache_options})
                 gl_params["inferstrand_args"] = inferstrand_args
 
-    # Floating format in config 
-    if_float_format = any("float_formats" in x for _, x in (cm.step(step) for step in cm.run_sequence))
+    # EAF floating format in config 
+    if_eaf_float_format = any(
+        y.get('run', False) and 'float_formats' in x and 'EAF' in x.get('float_formats', {})
+        for step in cm.run_sequence
+        if step != "write_parquet"
+        for y, x in [cm.step(step)]
+    )
 
     for step in cm.run_sequence:
         params, gl_params = cm.step(step)
@@ -265,7 +268,7 @@ def main(
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
-                if not if_float_format:
+                if not if_eaf_float_format:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
@@ -304,7 +307,7 @@ def main(
             elif step == "sort_alphabetically":
                 n_cores = gl_params.get("n_cores", 1)
                 sm.order_alleles(n_cores=n_cores)
-                if not if_float_format:
+                if not if_eaf_float_format:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
