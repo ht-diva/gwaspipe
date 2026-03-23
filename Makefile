@@ -37,7 +37,7 @@ pre-commit:
 tag:
 	git tag v${VERSION}
 
-test: unit-test functional_test_00 functional_test_01
+test: unit-test functional_test_00 functional_test_01 functional_test_02
 	@echo "End-to-End tests"
 
 
@@ -60,6 +60,15 @@ functional_test_01:
 	  -i examples/input_data_01.csv.gz \
 	  -f gtex \
 	  -s ',' \
+	  -o results
+
+functional_test_02:
+	@echo "Functional test 02"
+	gwaspipe \
+	  -c examples/config_sumstats_harmonization_check_ambiguous_snps.yml \
+	  -i examples/input_data_02.csv.gz \
+	  -f regenie \
+	  -s ' ' \
 	  -o results
 
 uninstall:
