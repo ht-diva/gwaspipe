@@ -1,3 +1,28 @@
+## [0.5.0] - 2026-03-23
+
+### 🚀 Features
+
+- Add parquet as gwaslab tab_fmt
+
+### 🐛 Bug Fixes
+
+- Update EAF precision/dtype & check_ambiguous_snps
+- Remove ambiguous_snps output
+- Update boolean for external EAF floating format
+
+### 💼 Other
+
+- Merge pull request #18 from ht-diva/ambiguous_snps
+
+Ambiguous snps
+
+### 🎨 Styling
+
+- Minor fixes
+
+### 🧪 Testing
+
+- Add test for ambiguous snps
 ## [0.4.0] - 2026-03-18
 
 ### 🚀 Features
@@ -27,6 +52,7 @@
 - Merge pull request #17 from ht-diva/oa_refactor_new
 
 Order alleles refactor
+- Bump version
 
 ### 🚜 Refactor
 
