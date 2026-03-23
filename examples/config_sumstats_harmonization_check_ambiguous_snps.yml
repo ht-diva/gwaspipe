@@ -9,8 +9,9 @@ run_sequence: !!omap
   - 3: 'fill_data'
   - 4: 'harmonize'
   - 5: 'sort_alphabetically'
-  - 6: 'write_tsv'
-  - 7: 'write_parquet'
+  - 6: 'check_ambiguous_snps'
+  - 7: 'write_tsv'
+  - 8: 'write_parquet'
 
 
 steps:
@@ -41,6 +42,11 @@ steps:
       run: True
     gl_params:
       threads: *cores
+  check_ambiguous_snps:
+    params:
+      run: True
+      workspace: "outputs"
+      workspace_subfolder: True
   write_tsv:
     params:
       run: True
@@ -63,7 +69,7 @@ steps:
       fmt: "gwaslab"
       tab_fmt: "parquet"
 
-# Filename transformation, e.g.: seq.10000.28.fastGWA
+# Filename transformation
 # use the filename mask to extract elements from the filename to be used in the output filename
 # filename_mask: [ True, True, True, False]
 # filename_sep: '.'

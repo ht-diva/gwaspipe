@@ -5,10 +5,8 @@ from pathlib import Path
 import click
 import gwaslab as gl
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 
-from gwaspipe import Log, __appname__, __version__, logger
+from gwaspipe import __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.order_alleles import order_alleles as order_alleles_func
 
@@ -237,6 +235,14 @@ def main(
                 inferstrand_args.update({"cache_options": cache_options})
                 gl_params["inferstrand_args"] = inferstrand_args
 
+    # EAF floating format in config
+    if_eaf_float_format = any(
+        y.get("run", False) and "float_formats" in x and "EAF" in x.get("float_formats", {})
+        for step in cm.run_sequence
+        if step != "write_parquet"
+        for y, x in [cm.step(step)]
+    )
+
     for step in cm.run_sequence:
         params, gl_params = cm.step(step)
         run = params.get("run", False)
@@ -262,7 +268,8 @@ def main(
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
-
+                if not if_eaf_float_format:
+                    sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
             elif step == "fill_data":
@@ -300,10 +307,12 @@ def main(
             elif step == "sort_alphabetically":
                 n_cores = gl_params.get("n_cores", 1)
                 sm.order_alleles(n_cores=n_cores)
+                if not if_eaf_float_format:
+                    sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
-            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa"]:
+            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa", "write_parquet"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
@@ -322,17 +331,16 @@ def main(
                 df = sm.mysumstats.data
 
                 # True duplicated SNPs
-                dup_mask = df.duplicated(subset=["SNPID", "BETA", "SE", "MLOG10P"], keep="first")
+                dup_mask = df.duplicated(subset=["SNPID", "EAF", "BETA", "SE"], keep="first")
                 nr_dup_snps = dup_mask.sum()
                 if nr_dup_snps > 0:
                     df = df.loc[~dup_mask].reset_index(drop=True)
 
                 # Ambiguous SNPs
                 snp_groups = df.groupby("SNPID")
-                ambiguous_mask = snp_groups[["BETA", "SE", "MLOG10P"]].transform("nunique").gt(1).any(axis=1)
+                ambiguous_mask = snp_groups[["EAF", "BETA", "SE"]].transform("nunique").gt(1).any(axis=1)
                 nr_ambiguous_snps = ambiguous_mask.sum()
                 if nr_ambiguous_snps > 0:
-                    df.loc[ambiguous_mask].to_csv(Path(workspace_path, "ambiguous_snps.tsv"), sep="\t", index=False)
                     df = df.loc[~ambiguous_mask].reset_index(drop=True)
 
                 # Multi-allelic SNPs
@@ -340,32 +348,15 @@ def main(
                 nr_multiallelic_loci = df.groupby(["CHR", "POS"])["SNPID"].nunique().gt(1).sum()
 
                 sm.mysumstats.data = df
-                if pid:
-                    output_path = str(Path(workspace_path, "table.snp_mapping"))
-                else:
-                    output_path = str(Path(workspace_path, input_file_stem))
-                log_path = output_path + ".dup.log"
-                log = Log(log_path)
-                log.write("Start to check ambiguous variants...")
-                log.write(f" -Dropped duplicated SNPs: {nr_dup_snps}")
-                log.write(f" -Dropped ambiguous SNPs: {nr_ambiguous_snps}")
-                log.write(f" -Multi-allelic SNPs: {nr_multiallelic_snps}")
-                log.write(f" -Multi-allelic positions: {nr_multiallelic_loci}")
-                log.write(f" -Current Dataframe shape : {len(sm.mysumstats.data)} x {len(sm.mysumstats.data.columns)}")
-            elif step == "write_parquet":
-                df = sm.mysumstats.data
-                table = pa.Table.from_pandas(df, preserve_index=False)
-                output_path = str(Path(workspace_path, input_file_stem))
-                output_path_pq = output_path + ".gwaslab.parquet"
-                pq.write_table(
-                    table,
-                    output_path_pq,
-                    compression="zstd",
-                    use_dictionary=True,
-                    coerce_timestamps="ms",
-                    flavor="spark",
+
+                sm.mysumstats.log.write("Start to check ambiguous variants...")
+                sm.mysumstats.log.write(f" -Dropped duplicated SNPs: {nr_dup_snps}")
+                sm.mysumstats.log.write(f" -Dropped ambiguous SNPs: {nr_ambiguous_snps}")
+                sm.mysumstats.log.write(f" -Multi-allelic SNPs: {nr_multiallelic_snps}")
+                sm.mysumstats.log.write(f" -Multi-allelic positions: {nr_multiallelic_loci}")
+                sm.mysumstats.log.write(
+                    f" -Current Dataframe shape : {len(sm.mysumstats.data)} x {len(sm.mysumstats.data.columns)}"
                 )
-                logger.info(f" -Writing sumstats to parquet: {output_path_pq}")
             elif step == "qq_manhattan_plots":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
                 cut = round(-np.log10(gl_params["sig_level"])) + params["dist"]
@@ -373,21 +364,6 @@ def main(
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")
-
-    # Append drop_duplicates logs to main GWASLab logger
-    if pid:
-        output_path = str(Path(workspace_path, "table.snp_mapping"))
-        log_path_main = output_path + ".log"
-    else:
-        output_path = str(Path(workspace_path, input_file_stem))
-        log_path_main = output_path + ".gwaslab.log"
-    log_path_dup = output_path + ".dup.log"
-    if Path(log_path_dup).exists() and Path(log_path_main).exists():
-        with open(log_path_dup, "r") as f:
-            dup_content = f.read()
-        with open(log_path_main, "a") as f:
-            f.write(dup_content)
-        Path(log_path_dup).unlink()
 
 
 if __name__ == "__main__":
