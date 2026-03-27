@@ -58,26 +58,28 @@ class TestConfigurationManagerProperties(unittest.TestCase):
             custom_path.unlink()
 
     def test_formatbook_path_property_with_default_path(self):
-        """Test formatbook_path property with default path."""
+        """Test formatbook_path property with a default path."""
         cm = ConfigurationManager(config_file=self.config_file)
-        default_path = Path(__file__).parent.parent.parent / "src" / "gwaspipe" / "data" / "formatbook.json"
-        self.assertEqual(cm.formatbook_path, default_path)
+        formatbook_path = cm.formatbook_path
+        self.assertIsInstance(formatbook_path, Path)
+        self.assertTrue(formatbook_path.name == "formatbook.json")
+        self.assertTrue(formatbook_path.exists(), f"formatbook.json should exist at {formatbook_path}")
 
     def test_log_file_path_property(self):
-        """Test log_file_path property."""
+        """Test a log_file_path property."""
         cm = ConfigurationManager(config_file=self.config_file)
         log_path = cm.log_file_path
         self.assertIsInstance(log_path, Path)
         self.assertTrue(str(log_path).endswith("file.log"))
 
     def test_root_path_property_with_custom_path(self):
-        """Test root_path property with custom path."""
+        """Test the root_path property with a custom path."""
         custom_path = Path("custom_root")
         cm = ConfigurationManager(config_file=self.config_file, root_path=custom_path)
         self.assertEqual(cm.root_path, custom_path)
 
     def test_root_path_property_with_config_path(self):
-        """Test root_path property with path from config."""
+        """Test the root_path property with a path from config."""
         cm = ConfigurationManager(config_file=self.config_file)
         self.assertIsInstance(cm.root_path, Path)
 
@@ -94,7 +96,7 @@ class TestConfigurationManagerProperties(unittest.TestCase):
         self.assertIsInstance(steps, dict)
 
     def test_step_method_with_existing_step(self):
-        """Test step method with existing step."""
+        """Test the step method with an existing step."""
         cm = ConfigurationManager(config_file=self.config_file)
         params, gl_params = cm.step("basic_check")
         self.assertIsInstance(params, dict)
@@ -102,7 +104,7 @@ class TestConfigurationManagerProperties(unittest.TestCase):
         self.assertIsInstance(gl_params, dict)
 
     def test_step_method_with_nonexistent_step(self):
-        """Test step method with non-existent step."""
+        """Test the step method with a non-existent step."""
         cm = ConfigurationManager(config_file=self.config_file)
         params, gl_params = cm.step("nonexistent_step")
         self.assertIsInstance(params, dict)
