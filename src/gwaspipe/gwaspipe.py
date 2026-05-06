@@ -268,7 +268,7 @@ def main(
                 sm.mysumstats.to_format(output_path, **gl_params)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
-                if not if_eaf_float_format:
+                if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "infer_build":
                 sm.mysumstats.infer_build()
@@ -307,7 +307,7 @@ def main(
             elif step == "sort_alphabetically":
                 n_cores = gl_params.get("n_cores", 1)
                 sm.order_alleles(n_cores=n_cores)
-                if not if_eaf_float_format:
+                if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
