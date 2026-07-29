@@ -86,14 +86,14 @@ def order_alleles(
     ...     mode='p'
     ... )
     """
+    if log is None:
+        log = Log()
+
     # Handle empty DataFrame case
     if sumstats_data.empty:
         if verbose:
             log.log("Empty DataFrame provided to order_alleles")
         return sumstats_data
-
-    if log is None:
-        log = Log()
 
     # Step 1: set status to appropriate value if ea and nea should be flipped
     # based on custom ordering

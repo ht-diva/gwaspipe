@@ -517,6 +517,12 @@ class TestOrderAlleles(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertTrue(result.empty)
 
+    def test_empty_dataframe_creates_default_log(self):
+        """Test an empty DataFrame can use the default logger."""
+        result = order_alleles(pd.DataFrame(), log=None, verbose=True)
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertTrue(result.empty)
+
     def test_vectorized_mode(self):
         """Test order_alleles in vectorized mode."""
         result = order_alleles(self.test_data.copy(), mode="v", verbose=False, log=self.log)
