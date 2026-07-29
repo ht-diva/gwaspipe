@@ -111,10 +111,11 @@ log_filename: "gwaspipe.log"
 
 ### Allele Ordering
 
-Configure the `order_alleles` step in your workflow:
+Configure the `sort_alphabetically` step in your workflow. Its parameters are
+forwarded directly to `SumstatsManager.order_alleles()`:
 
 ```yaml
-order_alleles:
+sort_alphabetically:
   params:
     run: True
   gl_params:

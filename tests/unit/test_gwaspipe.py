@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
 
 import gwaslab as gl
@@ -130,7 +131,6 @@ class TestCLIOptions(unittest.TestCase):
         mock_sm_class.return_value = mock_sm
 
         import sys
-        from io import StringIO
 
         from gwaspipe.gwaspipe import main
 
@@ -154,6 +154,46 @@ class TestCLIOptions(unittest.TestCase):
                 pass
 
         mock_cm_class.assert_called_once()
+
+    @patch("gwaspipe.gwaspipe.ConfigurationManager")
+    @patch("gwaspipe.gwaspipe.SumstatsManager")
+    def test_main_forwards_sort_alphabetically_parameters(self, mock_sm_class, mock_cm_class):
+        """Test all Order Alleles YAML parameters reach SumstatsManager."""
+        sort_params = {"mode": "p", "n_cores": 2, "format_snpid": False, "verbose": False}
+        mock_cm = MagicMock()
+        mock_cm.log_file_path = Path("test.log")
+        mock_cm.formatbook_path = Path("data/formatbook.json")
+        mock_cm.run_sequence = ("sort_alphabetically",)
+        mock_cm.filename_settings = (None, None)
+        mock_cm.step.return_value = ({"run": True, "workspace": "default"}, sort_params)
+        mock_cm_class.return_value = mock_cm
+
+        mock_sm = MagicMock()
+        mock_sm.mysumstats.data.columns = []
+        mock_sm_class.return_value = mock_sm
+
+        from click.testing import CliRunner
+
+        from gwaspipe.gwaspipe import main
+
+        with TemporaryDirectory() as temporary_directory:
+            mock_cm.root_path = temporary_directory
+            result = CliRunner().invoke(
+                main,
+                [
+                    "-c",
+                    "tests/data/test_config.yaml",
+                    "-i",
+                    "tests/data/test_sumstats.tsv",
+                    "-f",
+                    "plink_pvar",
+                    "-o",
+                    temporary_directory,
+                ],
+            )
+
+        self.assertEqual(result.exit_code, 0, result.output)
+        mock_sm.order_alleles.assert_called_once_with(**sort_params)
 
 
 if __name__ == "__main__":

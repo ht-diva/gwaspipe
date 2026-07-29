@@ -3,9 +3,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import gwaslab as gl
-import pandas as pd
-
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.gwaspipe import SumstatsManager
 
@@ -102,7 +99,7 @@ class TestPipelineExecution(unittest.TestCase):
                 if step == "basic_check":
                     sm.mysumstats.basic_check(**gl_params)
                 elif step == "sort_alphabetically":
-                    sm.order_alleles(n_cores=gl_params.get("n_cores", 1))
+                    sm.order_alleles(**gl_params)
 
         # Verify results
         self.assertIsNotNone(sm.mysumstats)

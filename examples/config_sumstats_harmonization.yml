@@ -40,7 +40,7 @@ steps:
     params:
       run: True
     gl_params:
-      threads: *cores
+      n_cores: *cores
   write_tsv:
     params:
       run: True

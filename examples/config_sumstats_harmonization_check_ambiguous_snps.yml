@@ -41,7 +41,7 @@ steps:
     params:
       run: True
     gl_params:
-      threads: *cores
+      n_cores: *cores
   check_ambiguous_snps:
     params:
       run: True

@@ -305,8 +305,7 @@ def main(
                     fp.write("input_file\tlambda_GC\tmean_chisq\tmax_chisq\n")
                     fp.write(f"{input_file_name}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
             elif step == "sort_alphabetically":
-                n_cores = gl_params.get("n_cores", 1)
-                sm.order_alleles(n_cores=n_cores)
+                sm.order_alleles(**gl_params)
                 if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "write_pickle":
