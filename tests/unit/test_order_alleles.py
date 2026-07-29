@@ -628,6 +628,31 @@ class TestOrderAlleles(unittest.TestCase):
         self.assertEqual(result.loc[1, "BETA"], -0.3)  # Negated
         self.assertEqual(result.loc[1, "EAF"], 1 - 0.03)  # Transformed to 1 - EAF
 
+    def test_string_alleles_are_preserved_and_flipped_end_to_end(self):
+        """Test end-to-end ordering with ordinary string allele columns."""
+        test_data = pd.DataFrame(
+            {
+                "CHR": [1, 2],
+                "POS": [1000, 2000],
+                "EA": ["T", "A"],
+                "NEA": ["A", "T"],
+                "STATUS": [9999999, 9999999],
+                "SNPID": ["legacy-1", "legacy-2"],
+                "BETA": [0.3, 0.2],
+                "EAF": [0.03, 0.02],
+            }
+        )
+
+        result = order_alleles(test_data, verbose=False, log=self.log)
+
+        self.assertEqual(result["EA"].astype(str).tolist(), ["A", "A"])
+        self.assertEqual(result["NEA"].astype(str).tolist(), ["T", "T"])
+        self.assertEqual(result["BETA"].tolist(), [-0.3, 0.2])
+        self.assertEqual(result["EAF"].tolist(), [1 - 0.03, 0.02])
+        self.assertEqual(str(result.loc[0, "STATUS"])[5], "1")
+        self.assertEqual(result.loc[1, "STATUS"], 9999999)
+        self.assertEqual(result["SNPID"].tolist(), ["1:1000:A:T", "2:2000:A:T"])
+
     def test_beta_and_eaf_flip_when_ea_t_nea_a_different_lengths(self):
         """Test that when EA='T' and NEA='A' with different lengths, BETA is negated and EAF is transformed to 1 - EAF."""
         # Create test data where one row has EA='T' and NEA='A' with different lengths

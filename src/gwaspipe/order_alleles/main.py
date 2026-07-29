@@ -114,11 +114,14 @@ def order_alleles(
 
     # Step 2: fix stats to match the new allele order
     # (ea and nea are swapped where needed and stats are fixed accordingly)
-    categories = set()
-    if sumstats_data[ea].dtype.name == "category":
-        categories = categories | set(sumstats_data[ea].cat.categories.tolist())
-    if sumstats_data[nea].dtype.name == "category":
-        categories = categories | set(sumstats_data[nea].cat.categories.tolist())
+    categories = pd.Index(
+        pd.concat(
+            [sumstats_data[ea].astype("object"), sumstats_data[nea].astype("object")],
+            ignore_index=True,
+        )
+        .dropna()
+        .unique()
+    )
 
     sumstats_data[ea] = pd.Categorical(sumstats_data[ea], categories=categories)
     sumstats_data[nea] = pd.Categorical(sumstats_data[nea], categories=categories)
