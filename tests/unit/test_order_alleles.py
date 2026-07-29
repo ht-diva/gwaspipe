@@ -523,6 +523,47 @@ class TestOrderAlleles(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertTrue(result.empty)
 
+    def test_missing_required_allele_column_raises_value_error(self):
+        """Test EA, NEA, and STATUS are required for non-empty input."""
+        test_data = pd.DataFrame({"EA": ["A"], "STATUS": [9999999]})
+
+        with self.assertRaisesRegex(ValueError, "Missing required columns: NEA"):
+            order_alleles(test_data, format_snpid=False, verbose=False, log=self.log)
+
+    def test_snpid_rebuild_requires_coordinate_columns(self):
+        """Test rebuilding an existing SNPID requires CHR and POS."""
+        test_data = pd.DataFrame({"EA": ["A"], "NEA": ["T"], "STATUS": [9999999], "SNPID": ["legacy-1"]})
+
+        with self.assertRaisesRegex(ValueError, "Missing required columns: CHR, POS"):
+            order_alleles(test_data, verbose=False, log=self.log)
+
+    def test_missing_required_values_raise_value_error(self):
+        """Test required EA, NEA, and STATUS values cannot be missing."""
+        for column in ("EA", "NEA", "STATUS"):
+            with self.subTest(column=column):
+                test_data = pd.DataFrame({"EA": ["A"], "NEA": ["T"], "STATUS": [9999999]})
+                test_data.loc[0, column] = None
+
+                with self.assertRaisesRegex(ValueError, f"required column '{column}'"):
+                    order_alleles(test_data, format_snpid=False, verbose=False, log=self.log)
+
+    def test_invalid_status_format_raises_value_error(self):
+        """Test status codes must be exactly seven digits."""
+        test_data = pd.DataFrame({"EA": ["A"], "NEA": ["T"], "STATUS": [999999]})
+
+        with self.assertRaisesRegex(ValueError, "seven-digit status codes"):
+            order_alleles(test_data, format_snpid=False, verbose=False, log=self.log)
+
+    def test_invalid_allele_alphabet_raises_value_error(self):
+        """Test alleles must be non-empty uppercase A/C/G/T sequences."""
+        for column, value in (("EA", "N"), ("NEA", "at")):
+            with self.subTest(column=column, value=value):
+                test_data = pd.DataFrame({"EA": ["A"], "NEA": ["T"], "STATUS": [9999999]})
+                test_data.loc[0, column] = value
+
+                with self.assertRaisesRegex(ValueError, f"Column '{column}'"):
+                    order_alleles(test_data, format_snpid=False, verbose=False, log=self.log)
+
     def test_vectorized_mode(self):
         """Test order_alleles in vectorized mode."""
         result = order_alleles(self.test_data.copy(), mode="v", verbose=False, log=self.log)

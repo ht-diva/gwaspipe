@@ -10,6 +10,30 @@ from .snpid import parallelbuildsnpid
 from .vectorized import parallelorderalleles_status, vectorizedorderalleles_status
 
 
+def _validate_order_alleles_input(sumstats_data, ea, nea, status, chrom, pos, snpid, format_snpid):
+    """Validate the non-empty input required for allele ordering."""
+    required_columns = [ea, nea, status]
+    if format_snpid and snpid in sumstats_data.columns:
+        required_columns.extend([chrom, pos, snpid])
+
+    missing_columns = [column for column in required_columns if column not in sumstats_data.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+    for column in required_columns:
+        if sumstats_data[column].isna().any():
+            raise ValueError(f"Missing values are not allowed in required column '{column}'")
+
+    status_values = sumstats_data[status].astype("string")
+    if not status_values.str.fullmatch(r"\d{7}").all():
+        raise ValueError(f"Column '{status}' must contain seven-digit status codes")
+
+    for allele_column in (ea, nea):
+        allele_values = sumstats_data[allele_column].astype("string")
+        if not allele_values.str.fullmatch(r"[ACGT]+").all():
+            raise ValueError(f"Column '{allele_column}' must contain non-empty uppercase A/C/G/T allele sequences")
+
+
 def order_alleles(
     sumstats_data,
     log=None,
@@ -94,6 +118,8 @@ def order_alleles(
         if verbose:
             log.log("Empty DataFrame provided to order_alleles")
         return sumstats_data
+
+    _validate_order_alleles_input(sumstats_data, ea, nea, status, chrom, pos, snpid, format_snpid)
 
     # Step 1: set status to appropriate value if ea and nea should be flipped
     # based on custom ordering
