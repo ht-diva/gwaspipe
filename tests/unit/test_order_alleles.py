@@ -3,6 +3,8 @@ import unittest
 import pandas as pd
 from gwaslab.info.g_Log import Log
 from gwaslab.qc.qc_fix_sumstats import _flip_allele_stats
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from gwaspipe.order_alleles import (
     ORDER_MAPPING,
@@ -16,6 +18,9 @@ from gwaspipe.order_alleles import (
     parallelorderalleles_status,
     vectorizedorderalleles_status,
 )
+
+ALLELE_STRATEGY = st.text(alphabet="ACGT", min_size=1, max_size=20)
+STATUS_STRATEGY = st.integers(min_value=1_000_000, max_value=9_999_999)
 
 
 class TestCustomAllelesSort(unittest.TestCase):
@@ -296,6 +301,27 @@ class TestParallelOrderAllelesStatus(unittest.TestCase):
     #     result = parallelorderalleles_status(df, n_cores=1, verbose=False, log=self.log)
     #     self.assertIsInstance(result, pd.DataFrame)
     #     self.assertEqual(len(result), 2)
+
+
+class TestOrderAllelesStatusEquivalence(unittest.TestCase):
+    """Property tests for equivalent allele-ordering implementations."""
+
+    @settings(max_examples=200, deadline=None)
+    @given(
+        rows=st.lists(
+            st.tuples(ALLELE_STRATEGY, ALLELE_STRATEGY, STATUS_STRATEGY),
+            min_size=1,
+            max_size=50,
+        )
+    )
+    def test_vectorized_and_rowwise_statuses_are_equivalent(self, rows):
+        """Test both implementations make identical status changes for valid alleles."""
+        sumstats = pd.DataFrame(rows, columns=["EA", "NEA", "STATUS"])
+
+        vectorized_result = vectorizedorderalleles_status(sumstats.copy(), verbose=False, log=Log())
+        rowwise_result = orderalleles_status(sumstats.copy(), verbose=False, log=Log())
+
+        self.assertEqual(vectorized_result["STATUS"].tolist(), rowwise_result["STATUS"].tolist())
 
 
 class TestBuildSnpids(unittest.TestCase):
