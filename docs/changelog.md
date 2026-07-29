@@ -1,3 +1,26 @@
+## [0.6.0] - 2026-07-29
+
+### 🚀 Features
+
+- *(gwaspipe)* Add genome assembly validation and provenance tracking
+
+### 🐛 Bug Fixes
+
+- Check EAF exists
+- Avoid categorical conversion can erase allele value
+- Move logger creation before the empty-dataframe branch
+- Validate required columns, status format, missing values, and allele alphabet
+- Forward YAML parameters consistently and standardize on n_cores label
+
+### 🧪 Testing
+
+- Add integration and unit tests for pipeline execution and configuration management
+- Fix the config test
+- Make vectorized and row-wise results property-test equivalent over the supported input domain
+
+### ⚙️ Miscellaneous Tasks
+
+- Update gitignore
 ## [0.5.0] - 2026-03-23
 
 ### 🚀 Features
@@ -15,6 +38,7 @@
 - Merge pull request #18 from ht-diva/ambiguous_snps
 
 Ambiguous snps
+- Bump version
 
 ### 🎨 Styling
 
