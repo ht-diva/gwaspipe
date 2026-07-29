@@ -1,14 +1,163 @@
 import gzip
+import json
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
 import gwaslab as gl
 import numpy as np
+import polars as pl
 
 from gwaspipe import __appname__, __version__, logger
 from gwaspipe.configuring import ConfigurationManager
 from gwaspipe.order_alleles import order_alleles as order_alleles_func
+
+
+class AssemblyValidationError(ValueError):
+    """Raised when an assembly declaration cannot be validated safely."""
+
+
+_ASSEMBLY_ALIASES = {
+    "19": "19",
+    "37": "19",
+    "b37": "19",
+    "grch37": "19",
+    "hg19": "19",
+    "38": "38",
+    "b38": "38",
+    "grch38": "38",
+    "hg38": "38",
+}
+_ASSEMBLY_LABELS = {"19": "GRCh37", "38": "GRCh38"}
+
+
+def _normalise_assembly(assembly):
+    if assembly is None:
+        return None
+    return _ASSEMBLY_ALIASES.get(str(assembly).strip().lower())
+
+
+def _hapmap3_match_counts(sumstats_data):
+    """Count input rows matching the HapMap3 coordinates used by GWASLab."""
+    from gwaslab.util.util_in_filter_value import _get_hapmap_df_polars
+
+    missing_columns = {"CHR", "POS"}.difference(sumstats_data.columns)
+    if missing_columns:
+        raise AssemblyValidationError(f"Cannot infer genome assembly; missing columns: {sorted(missing_columns)}")
+
+    positions = (
+        pl.from_pandas(sumstats_data[["CHR", "POS"]])
+        .filter(pl.col("CHR").is_not_null() & pl.col("POS").is_not_null())
+        .with_columns(
+            pl.col("CHR").cast(pl.Int64),
+            pl.col("POS").cast(pl.Int64),
+        )
+    )
+    return {
+        build: positions.join(_get_hapmap_df_polars(build), on=["CHR", "POS"], how="semi").height
+        for build in ("19", "38")
+    }
+
+
+def _assembly_audit_config(config):
+    validation_config = config.get("assembly_validation", {})
+    if validation_config is None:
+        validation_config = {}
+    if not isinstance(validation_config, dict):
+        raise AssemblyValidationError("assembly_validation must be a mapping")
+
+    min_matches = validation_config.get("min_hapmap3_matches", 10000)
+    if not isinstance(min_matches, int) or min_matches < 1:
+        raise AssemblyValidationError("assembly_validation.min_hapmap3_matches must be a positive integer")
+
+    override_reason = validation_config.get("override_reason")
+    allow_override = bool(validation_config.get("allow_override", False))
+    if allow_override and not isinstance(override_reason, str):
+        raise AssemblyValidationError("assembly_validation.override_reason is required when allow_override is true")
+
+    return {
+        "declared_input_assembly": config.get("genome_assembly"),
+        "min_hapmap3_matches": min_matches,
+        "allow_override": allow_override,
+        "override_reason": override_reason,
+        "reference_resources": config.get("reference_resources", {}),
+    }
+
+
+def _store_assembly_audit(mysumstats, audit):
+    mysumstats.meta.setdefault("gwaspipe", {})["assembly_validation"] = audit
+
+
+def validate_declared_assembly(mysumstats, config, infer_build_params=None, declared_assembly=None, scope="input"):
+    """Run build inference and verify it against a declared assembly."""
+    policy = _assembly_audit_config(config)
+    declared_assembly = policy["declared_input_assembly"] if declared_assembly is None else declared_assembly
+    declared_build = _normalise_assembly(declared_assembly)
+    counts = _hapmap3_match_counts(mysumstats.data)
+    if counts["19"] > counts["38"]:
+        inferred_build = "19"
+    elif counts["38"] > counts["19"]:
+        inferred_build = "38"
+    else:
+        inferred_build = "Unknown"
+
+    # Keep GWASLab's STATUS and metadata behaviour, while retaining the evidence
+    # needed to audit the decision at the pipeline layer.
+    mysumstats.infer_build(**(infer_build_params or {}))
+
+    reasons = []
+    if declared_build is None:
+        reasons.append("missing or unsupported declared genome_assembly")
+    if inferred_build == "Unknown":
+        reasons.append("ambiguous inferred genome assembly")
+    if max(counts.values()) < policy["min_hapmap3_matches"]:
+        reasons.append(f"fewer than {policy['min_hapmap3_matches']} HapMap3 coordinate matches")
+    if declared_build and inferred_build != "Unknown" and declared_build != inferred_build:
+        reasons.append("declared and inferred genome assemblies disagree")
+
+    overridden = bool(reasons) and policy["allow_override"]
+    passed = not reasons or overridden
+    audit = {
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "validation_scope": scope,
+        "declared_assembly": declared_assembly,
+        "declared_build": _ASSEMBLY_LABELS.get(declared_build),
+        "inferred_assembly": _ASSEMBLY_LABELS.get(inferred_build, "Unknown"),
+        "hapmap3_match_counts": {
+            "GRCh37": counts["19"],
+            "GRCh38": counts["38"],
+        },
+        "minimum_hapmap3_matches": policy["min_hapmap3_matches"],
+        "inference_method": "HapMap3 CHR/POS coordinate overlap via GWASLab infer_build",
+        "reference_resource_versions": policy["reference_resources"],
+        "decision": "passed" if not reasons else "overridden" if overridden else "failed",
+        "override_reason": policy["override_reason"] if overridden else None,
+        "failure_reasons": reasons,
+    }
+    _store_assembly_audit(mysumstats, audit)
+    if not passed:
+        raise AssemblyValidationError("Assembly validation failed: " + "; ".join(reasons))
+    return audit
+
+
+def _require_validated_assembly(mysumstats):
+    audit = mysumstats.meta.get("gwaspipe", {}).get("assembly_validation")
+    if not audit or audit["decision"] not in {"passed", "overridden"}:
+        raise AssemblyValidationError(
+            "A successful infer_build validation is required before this reference-aware step."
+        )
+    return audit
+
+
+def _write_assembly_provenance(output_path, mysumstats):
+    """Write a machine-readable sidecar for every output with assembly validation."""
+    audit = mysumstats.meta.get("gwaspipe", {}).get("assembly_validation")
+    if audit is None:
+        return
+    provenance_path = Path(f"{output_path}.provenance.json")
+    with provenance_path.open("w") as output_file:
+        json.dump({"assembly_validation": audit}, output_file, indent=2, sort_keys=True)
 
 
 class SumstatsManager:
@@ -266,19 +415,32 @@ def main(
                 )
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
+                _write_assembly_provenance(output_path, sm.mysumstats)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
                 if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "infer_build":
-                sm.mysumstats.infer_build()
+                validate_declared_assembly(sm.mysumstats, cm.config, gl_params)
             elif step == "fill_data":
                 sm.fill_mlog10p(gl_params)
                 sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
+                _require_validated_assembly(sm.mysumstats)
                 sm.mysumstats.harmonize(**gl_params)
             elif step == "liftover":
+                input_audit = _require_validated_assembly(sm.mysumstats)
                 sm.mysumstats.liftover(**gl_params)
+                if "to_build" not in gl_params:
+                    raise AssemblyValidationError("liftover requires gl_params.to_build for post-liftover validation")
+                output_audit = validate_declared_assembly(
+                    sm.mysumstats,
+                    cm.config,
+                    declared_assembly=gl_params["to_build"],
+                    scope="post_liftover",
+                )
+                output_audit["input_validation"] = input_audit
+                _store_assembly_audit(sm.mysumstats, output_audit)
             elif step == "report_harmonization_summary":
                 summary = sm.mysumstats.lookup_status().to_string()
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "harmonization_summary.tsv"])))
@@ -304,29 +466,37 @@ def main(
                 with open(output_path, "w") as fp:
                     fp.write("input_file\tlambda_GC\tmean_chisq\tmax_chisq\n")
                     fp.write(f"{input_file_name}\t{lambda_GC}\t{mean_chisq}\t{max_chisq}\n")
-            elif step == "sort_alphabetically":
+            elif step in {"canonicalize_effect_alleles", "sort_alphabetically"}:
+                if step == "sort_alphabetically":
+                    logger.warning("sort_alphabetically is deprecated; use canonicalize_effect_alleles instead.")
                 sm.order_alleles(**gl_params)
                 if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
+                _write_assembly_provenance(output_path, sm.mysumstats)
             elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa", "write_parquet"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
+                _write_assembly_provenance(output_path, sm.mysumstats)
             elif step == "write_vcf":
+                _require_validated_assembly(sm.mysumstats)
                 study_name = input_file_stem
                 sm.mysumstats.meta["gwaslab"]["study_name"] = study_name
-                sm.mysumstats.infer_build()
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
+                _write_assembly_provenance(output_path, sm.mysumstats)
             elif step == "write_same_input_format":
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
-            elif step == "check_ambiguous_snps":
+                _write_assembly_provenance(output_path, sm.mysumstats)
+            elif step in {"filter_conflicting_snpids", "check_ambiguous_snps"}:
+                if step == "check_ambiguous_snps":
+                    logger.warning("check_ambiguous_snps is deprecated; use filter_conflicting_snpids instead.")
                 df = sm.mysumstats.data
 
                 # True duplicated SNPs

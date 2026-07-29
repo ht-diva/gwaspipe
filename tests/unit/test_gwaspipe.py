@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, patch
 import gwaslab as gl
 import pandas as pd
 
-from gwaspipe.gwaspipe import SumstatsManager
+from gwaspipe.gwaspipe import (
+    AssemblyValidationError,
+    SumstatsManager,
+    _require_validated_assembly,
+    _write_assembly_provenance,
+    validate_declared_assembly,
+)
 
 
 class TestSumstatsManager(unittest.TestCase):
@@ -157,20 +163,15 @@ class TestCLIOptions(unittest.TestCase):
 
     @patch("gwaspipe.gwaspipe.ConfigurationManager")
     @patch("gwaspipe.gwaspipe.SumstatsManager")
-    def test_main_forwards_sort_alphabetically_parameters(self, mock_sm_class, mock_cm_class):
-        """Test all Order Alleles YAML parameters reach SumstatsManager."""
+    def test_main_forwards_canonicalization_parameters_for_both_step_names(self, mock_sm_class, mock_cm_class):
+        """The preferred canonicalization step and its alias forward identical parameters."""
         sort_params = {"mode": "p", "n_cores": 2, "format_snpid": False, "verbose": False}
         mock_cm = MagicMock()
         mock_cm.log_file_path = Path("test.log")
         mock_cm.formatbook_path = Path("data/formatbook.json")
-        mock_cm.run_sequence = ("sort_alphabetically",)
         mock_cm.filename_settings = (None, None)
         mock_cm.step.return_value = ({"run": True, "workspace": "default"}, sort_params)
         mock_cm_class.return_value = mock_cm
-
-        mock_sm = MagicMock()
-        mock_sm.mysumstats.data.columns = []
-        mock_sm_class.return_value = mock_sm
 
         from click.testing import CliRunner
 
@@ -178,22 +179,152 @@ class TestCLIOptions(unittest.TestCase):
 
         with TemporaryDirectory() as temporary_directory:
             mock_cm.root_path = temporary_directory
-            result = CliRunner().invoke(
-                main,
-                [
-                    "-c",
-                    "tests/data/test_config.yaml",
-                    "-i",
-                    "tests/data/test_sumstats.tsv",
-                    "-f",
-                    "plink_pvar",
-                    "-o",
-                    temporary_directory,
-                ],
-            )
+            for step_name in ("canonicalize_effect_alleles", "sort_alphabetically"):
+                with self.subTest(step_name=step_name):
+                    mock_cm.run_sequence = (step_name,)
+                    mock_sm = MagicMock()
+                    mock_sm.mysumstats.data.columns = []
+                    mock_sm_class.return_value = mock_sm
+                    result = CliRunner().invoke(
+                        main,
+                        [
+                            "-c",
+                            "tests/data/test_config.yaml",
+                            "-i",
+                            "tests/data/test_sumstats.tsv",
+                            "-f",
+                            "plink_pvar",
+                            "-o",
+                            temporary_directory,
+                        ],
+                    )
 
-        self.assertEqual(result.exit_code, 0, result.output)
-        mock_sm.order_alleles.assert_called_once_with(**sort_params)
+                    self.assertEqual(result.exit_code, 0, result.output)
+                    mock_sm.order_alleles.assert_called_once_with(**sort_params)
+
+    @patch("gwaspipe.gwaspipe.ConfigurationManager")
+    @patch("gwaspipe.gwaspipe.SumstatsManager")
+    def test_main_accepts_both_conflicting_snpid_step_names(self, mock_sm_class, mock_cm_class):
+        """The preferred step name and its deprecated alias have identical behaviour."""
+        from click.testing import CliRunner
+
+        from gwaspipe.gwaspipe import main
+
+        mock_cm = MagicMock()
+        mock_cm.log_file_path = Path("test.log")
+        mock_cm.formatbook_path = Path("data/formatbook.json")
+        mock_cm.filename_settings = (None, None)
+        mock_cm.step.return_value = ({"run": True, "workspace": "default"}, {})
+        mock_cm_class.return_value = mock_cm
+
+        with TemporaryDirectory() as temporary_directory:
+            mock_cm.root_path = temporary_directory
+            for step_name in ("filter_conflicting_snpids", "check_ambiguous_snps"):
+                with self.subTest(step_name=step_name):
+                    mock_cm.run_sequence = (step_name,)
+                    mock_sm = MagicMock()
+                    mock_sm.mysumstats.data = pd.DataFrame(
+                        {
+                            "SNPID": ["1:100:A:G", "1:100:A:G"],
+                            "EAF": [0.2, 0.2],
+                            "BETA": [0.1, 0.1],
+                            "SE": [0.01, 0.01],
+                            "CHR": [1, 1],
+                            "POS": [100, 100],
+                        }
+                    )
+                    mock_sm_class.return_value = mock_sm
+
+                    result = CliRunner().invoke(
+                        main,
+                        [
+                            "-c",
+                            "tests/data/test_config.yaml",
+                            "-i",
+                            "tests/data/test_sumstats.tsv",
+                            "-f",
+                            "plink_pvar",
+                            "-o",
+                            temporary_directory,
+                        ],
+                    )
+
+                    self.assertEqual(result.exit_code, 0, result.output)
+                    self.assertEqual(len(mock_sm.mysumstats.data), 1)
+
+
+class TestAssemblyValidation(unittest.TestCase):
+    def setUp(self):
+        self.sumstats = MagicMock()
+        self.sumstats.data = pd.DataFrame({"CHR": [1], "POS": [100]})
+        self.sumstats.meta = {"gwaslab": {}}
+        self.config = {
+            "genome_assembly": "GRCh38",
+            "reference_resources": {"reference_fasta": "GRCh38, release 109"},
+            "assembly_validation": {"min_hapmap3_matches": 10000, "allow_override": False},
+        }
+
+    @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 2, "38": 10000})
+    def test_records_successful_assembly_audit(self, mock_match_counts):
+        audit = validate_declared_assembly(self.sumstats, self.config)
+
+        self.assertEqual(audit["decision"], "passed")
+        self.assertEqual(audit["inferred_assembly"], "GRCh38")
+        self.assertEqual(audit["hapmap3_match_counts"], {"GRCh37": 2, "GRCh38": 10000})
+        self.assertEqual(self.sumstats.meta["gwaspipe"]["assembly_validation"], audit)
+        self.sumstats.infer_build.assert_called_once_with()
+        mock_match_counts.assert_called_once_with(self.sumstats.data)
+
+    @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 10000, "38": 2})
+    def test_rejects_discordant_assembly_without_override(self, _):
+        with self.assertRaisesRegex(AssemblyValidationError, "disagree"):
+            validate_declared_assembly(self.sumstats, self.config)
+
+        self.assertEqual(self.sumstats.meta["gwaspipe"]["assembly_validation"]["decision"], "failed")
+
+    @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 2, "38": 10000})
+    def test_rejects_missing_assembly_declaration_without_override(self, _):
+        self.config.pop("genome_assembly")
+
+        with self.assertRaisesRegex(AssemblyValidationError, "missing or unsupported"):
+            validate_declared_assembly(self.sumstats, self.config)
+
+    @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 10000, "38": 10000})
+    def test_rejects_unknown_inference_without_override(self, _):
+        with self.assertRaisesRegex(AssemblyValidationError, "ambiguous inferred"):
+            validate_declared_assembly(self.sumstats, self.config)
+
+    @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 0, "38": 4})
+    def test_rejects_low_evidence_without_override(self, _):
+        with self.assertRaisesRegex(AssemblyValidationError, "fewer than 10000"):
+            validate_declared_assembly(self.sumstats, self.config)
+
+    @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 0, "38": 4})
+    def test_records_explicit_override_for_low_evidence(self, _):
+        self.config["assembly_validation"] = {
+            "min_hapmap3_matches": 10000,
+            "allow_override": True,
+            "override_reason": "Validated against the source study manifest.",
+        }
+
+        audit = validate_declared_assembly(self.sumstats, self.config)
+
+        self.assertEqual(audit["decision"], "overridden")
+        self.assertEqual(audit["override_reason"], "Validated against the source study manifest.")
+
+    def test_requires_a_completed_validation(self):
+        with self.assertRaisesRegex(AssemblyValidationError, "infer_build validation"):
+            _require_validated_assembly(self.sumstats)
+
+    def test_writes_json_provenance_sidecar(self):
+        self.sumstats.meta["gwaspipe"] = {"assembly_validation": {"decision": "passed"}}
+        with TemporaryDirectory() as temporary_directory:
+            output_path = Path(temporary_directory, "summary_statistics")
+            _write_assembly_provenance(output_path, self.sumstats)
+            provenance_path = Path(f"{output_path}.provenance.json")
+
+            self.assertTrue(provenance_path.exists())
+            self.assertIn('"decision": "passed"', provenance_path.read_text())
 
 
 if __name__ == "__main__":

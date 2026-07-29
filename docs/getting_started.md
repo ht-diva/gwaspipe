@@ -74,7 +74,7 @@ run_sequence: !!omap
   - 2: 'infer_build'
   - 3: 'fill_data'
   - 4: 'harmonize'
-  - 5: 'sort_alphabetically'
+  - 5: 'canonicalize_effect_alleles'
   - 6: 'write_tsv'
 ```
 
@@ -96,6 +96,34 @@ steps:
       run: True
 ```
 
+### Assembly declaration and provenance
+
+Reference-aware steps (`harmonize`, `liftover`, and VCF export) require a preceding
+`infer_build` step with a declared input assembly. `infer_build` compares HapMap3
+coordinate matches for GRCh37 and GRCh38, then records its decision in GWASLab
+metadata and in a `.provenance.json` sidecar next to each output. Declare the
+versions of every reference resource used by the workflow.
+
+```yaml
+genome_assembly: GRCh38
+reference_resources:
+  hapmap3_coordinates: "GWASLab 4.0.2 bundled HapMap3 tables"
+  reference_fasta: "GRCh38, release 109"
+  allele_frequency_panel: "1000 Genomes Phase 3, GRCh38"
+assembly_validation:
+  min_hapmap3_matches: 10000
+  allow_override: false
+```
+
+An override is permitted only when it is explicitly justified and is recorded in
+the provenance:
+
+```yaml
+assembly_validation:
+  allow_override: true
+  override_reason: "Legacy study has fewer than 10,000 HapMap3 markers; validated against its manifest."
+```
+
 ### Common Parameters
 
 ```yaml
@@ -111,11 +139,11 @@ log_filename: "gwaspipe.log"
 
 ### Allele Ordering
 
-Configure the `sort_alphabetically` step in your workflow. Its parameters are
+Configure the `canonicalize_effect_alleles` step in your workflow. Its parameters are
 forwarded directly to `SumstatsManager.order_alleles()`:
 
 ```yaml
-sort_alphabetically:
+canonicalize_effect_alleles:
   params:
     run: True
   gl_params:
@@ -124,13 +152,14 @@ sort_alphabetically:
     format_snpid: True
 ```
 
+`sort_alphabetically` remains available as a deprecated compatibility alias.
+
 ### Genome Build Inference
 
 ```yaml
 infer_build:
   params:
     run: True
-    build: "19"  # Default build (19 or 38)
 ```
 
 ### Getting Help

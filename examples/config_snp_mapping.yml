@@ -1,6 +1,12 @@
 ---
 # common parameters
 n_cores: &cores 3
+genome_assembly: GRCh38
+reference_resources:
+  hapmap3_coordinates: "GWASLab 4.0.2 bundled HapMap3 tables"
+assembly_validation:
+  min_hapmap3_matches: 10000
+  allow_override: false
 
 # This is an ordered dict that contains the order in which the steps are run.
 run_sequence: !!omap
@@ -8,7 +14,7 @@ run_sequence: !!omap
   - 2: 'infer_build'
   - 3: 'fill_data'
   - 4: 'harmonize'
-  - 6: 'sort_alphabetically'
+  - 6: 'canonicalize_effect_alleles'
   - 7: 'write_snp_mapping'
 
 steps:
@@ -34,7 +40,7 @@ steps:
     gl_params:
       basic_check: False
       n_cores: *cores
-  sort_alphabetically:
+  canonicalize_effect_alleles:
     params:
       run: True
     gl_params:
