@@ -1,4 +1,6 @@
+import json
 import unittest
+from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -6,11 +8,12 @@ from unittest.mock import MagicMock, patch
 import gwaslab as gl
 import pandas as pd
 
+from gwaspipe import __version__
 from gwaspipe.gwaspipe import (
     AssemblyValidationError,
     SumstatsManager,
     _require_validated_assembly,
-    _write_assembly_provenance,
+    _write_run_provenance,
     validate_declared_assembly,
 )
 
@@ -320,11 +323,18 @@ class TestAssemblyValidation(unittest.TestCase):
         self.sumstats.meta["gwaspipe"] = {"assembly_validation": {"decision": "passed"}}
         with TemporaryDirectory() as temporary_directory:
             output_path = Path(temporary_directory, "summary_statistics")
-            _write_assembly_provenance(output_path, self.sumstats)
+            source_path = Path("input.tsv")
+            _write_run_provenance(output_path, self.sumstats, source_path)
             provenance_path = Path(f"{output_path}.provenance.json")
 
             self.assertTrue(provenance_path.exists())
-            self.assertIn('"decision": "passed"', provenance_path.read_text())
+            provenance = json.loads(provenance_path.read_text())
+            self.assertEqual(provenance["gwaspipe_version"], __version__)
+            timestamp = datetime.fromisoformat(provenance["timestamp_utc"])
+            self.assertEqual(timestamp.tzinfo, UTC)
+            self.assertEqual(provenance["source_path"], str(source_path))
+            self.assertEqual(provenance["output_path"], str(output_path))
+            self.assertEqual(provenance["assembly_validation"]["decision"], "passed")
 
 
 if __name__ == "__main__":

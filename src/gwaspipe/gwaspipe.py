@@ -150,14 +150,25 @@ def _require_validated_assembly(mysumstats):
     return audit
 
 
-def _write_assembly_provenance(output_path, mysumstats):
+def _write_run_provenance(output_path, mysumstats, source_path=None):
     """Write a machine-readable sidecar for every output with assembly validation."""
     audit = mysumstats.meta.get("gwaspipe", {}).get("assembly_validation")
     if audit is None:
         return
     provenance_path = Path(f"{output_path}.provenance.json")
     with provenance_path.open("w") as output_file:
-        json.dump({"assembly_validation": audit}, output_file, indent=2, sort_keys=True)
+        json.dump(
+            {
+                "gwaspipe_version": __version__,
+                "timestamp_utc": datetime.now(UTC).isoformat(),
+                "source_path": str(source_path) if source_path is not None else None,
+                "output_path": str(output_path),
+                "assembly_validation": audit,
+            },
+            output_file,
+            indent=2,
+            sort_keys=True,
+        )
 
 
 class SumstatsManager:
@@ -415,7 +426,7 @@ def main(
                 )
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
-                _write_assembly_provenance(output_path, sm.mysumstats)
+                _write_run_provenance(output_path, sm.mysumstats, input_file_path)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
                 if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
@@ -475,12 +486,12 @@ def main(
             elif step == "write_pickle":
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
-                _write_assembly_provenance(output_path, sm.mysumstats)
+                _write_run_provenance(output_path, sm.mysumstats, input_file_path)
             elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa", "write_parquet"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
-                _write_assembly_provenance(output_path, sm.mysumstats)
+                _write_run_provenance(output_path, sm.mysumstats, input_file_path)
             elif step == "write_vcf":
                 _require_validated_assembly(sm.mysumstats)
                 study_name = input_file_stem
@@ -488,12 +499,12 @@ def main(
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)
-                _write_assembly_provenance(output_path, sm.mysumstats)
+                _write_run_provenance(output_path, sm.mysumstats, input_file_path)
             elif step == "write_same_input_format":
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, fmt=input_file_format, **gl_params)
-                _write_assembly_provenance(output_path, sm.mysumstats)
+                _write_run_provenance(output_path, sm.mysumstats, input_file_path)
             elif step in {"filter_conflicting_snpids", "check_ambiguous_snps"}:
                 if step == "check_ambiguous_snps":
                     logger.warning("check_ambiguous_snps is deprecated; use filter_conflicting_snpids instead.")
