@@ -1,6 +1,7 @@
 import gzip
 import json
 import os
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -30,6 +31,72 @@ _ASSEMBLY_ALIASES = {
     "hg38": "38",
 }
 _ASSEMBLY_LABELS = {"19": "GRCh37", "38": "GRCh38"}
+_QC_STEPS = {
+    "basic_check",
+    "infer_build",
+    "harmonize",
+    "liftover",
+    "canonicalize_effect_alleles",
+    "sort_alphabetically",
+    "filter_conflicting_snpids",
+    "check_ambiguous_snps",
+}
+_GWASLAB_REMOVAL_PATTERN = re.compile(r"-Removed variants (.+): (\d+)$")
+_GWASLAB_COUNT_FIRST_REMOVAL_PATTERN = re.compile(r"-Removed (\d+) variants (.+?)[.:]$")
+_ORDER_ALLELES_FLIPPED_PATTERN = re.compile(r"-For Flipped match \((\d+) matches\)")
+
+
+def _basic_check_exclusion_counts(log_delta):
+    """Translate GWASLab basic_check removal messages into stable reason codes."""
+    exclusion_counts = {}
+    position_outlier_count = 0
+    for line in log_delta.splitlines():
+        match = _GWASLAB_REMOVAL_PATTERN.search(line)
+        if match is not None:
+            reason, count_text = match.groups()
+            count = int(count_text)
+        else:
+            count_first_match = _GWASLAB_COUNT_FIRST_REMOVAL_PATTERN.search(line)
+            if count_first_match is None:
+                continue
+            count_text, reason = count_first_match.groups()
+            count = int(count_text)
+        if reason == "in total":
+            continue
+        if reason == "outliers":
+            reason_code = "basic_check_position_out_of_bounds"
+            position_outlier_count += count
+        elif reason == "with bad positions":
+            reason_code = "basic_check_missing_or_invalid_position"
+            count = max(count - position_outlier_count, 0)
+        elif reason == "with chromosome notations not in CHR list" or reason.startswith("with CHR < "):
+            reason_code = "basic_check_invalid_chromosome"
+        elif reason == "with NA alleles or alleles that contain bases other than A/C/T/G":
+            reason_code = "basic_check_missing_or_invalid_allele"
+        elif reason == "with same allele for EA and NEA":
+            reason_code = "basic_check_identical_effect_and_non_effect_alleles"
+        elif reason == "based on SNPID":
+            reason_code = "basic_check_duplicate_snpid"
+        elif reason == "based on rsID":
+            reason_code = "basic_check_duplicate_rsid"
+        elif reason == "based on CHR,POS,EA and NEA":
+            reason_code = "basic_check_duplicate_variant_identity"
+        elif reason == "multiallelic variants":
+            reason_code = "basic_check_multiallelic_variant"
+        elif reason.lower() == "with bad/na p":
+            reason_code = "basic_check_invalid_or_missing_p_value"
+        elif reason.startswith("with NA values in "):
+            reason_code = "basic_check_missing_required_value"
+        else:
+            reason_code = "basic_check_gwaslab_" + re.sub(r"[^a-z0-9]+", "_", reason.lower()).strip("_")
+        if count:
+            exclusion_counts[reason_code] = exclusion_counts.get(reason_code, 0) + count
+    return exclusion_counts
+
+
+def _order_alleles_flipped_count(log_delta):
+    """Return the number of allele pairs swapped by canonicalization."""
+    return sum(int(match.group(1)) for match in _ORDER_ALLELES_FLIPPED_PATTERN.finditer(log_delta))
 
 
 def _normalise_assembly(assembly):
@@ -150,25 +217,56 @@ def _require_validated_assembly(mysumstats):
     return audit
 
 
-def _write_run_provenance(output_path, mysumstats, source_path=None):
-    """Write a machine-readable sidecar for every output with assembly validation."""
-    audit = mysumstats.meta.get("gwaspipe", {}).get("assembly_validation")
-    if audit is None:
-        return
-    provenance_path = Path(f"{output_path}.provenance.json")
-    with provenance_path.open("w") as output_file:
-        json.dump(
+def _record_qc_step(mysumstats, step, rows_before, exclusion_counts=None, metrics=None):
+    """Record row counts, exclusion reasons, and non-exclusion QC metrics."""
+    rows_after = len(mysumstats.data)
+    exclusion_counts = exclusion_counts or {}
+    exclusions = [
+        {"reason_code": reason_code, "row_count": int(row_count)}
+        for reason_code, row_count in exclusion_counts.items()
+        if row_count
+    ]
+    accounted_exclusions = sum(exclusion["row_count"] for exclusion in exclusions)
+    unaccounted_exclusions = max(rows_before - rows_after - accounted_exclusions, 0)
+    if unaccounted_exclusions:
+        exclusions.append(
             {
-                "gwaspipe_version": __version__,
-                "timestamp_utc": datetime.now(UTC).isoformat(),
-                "source_path": str(source_path) if source_path is not None else None,
-                "output_path": str(output_path),
-                "assembly_validation": audit,
-            },
-            output_file,
-            indent=2,
-            sort_keys=True,
+                "reason_code": f"unattributed_removal_by_{step}",
+                "row_count": unaccounted_exclusions,
+            }
         )
+
+    audit = {
+        "step": step,
+        "rows_before": rows_before,
+        "rows_after": rows_after,
+        "rows_excluded": rows_before - rows_after,
+        "exclusions": exclusions,
+    }
+    if metrics:
+        audit["metrics"] = metrics
+    gwaspipe_meta = mysumstats.meta.setdefault("gwaspipe", {})
+    gwaspipe_meta.setdefault("qc_steps", []).append(audit)
+
+
+def _write_run_provenance(output_path, mysumstats, source_path=None, steps=None):
+    """Write a machine-readable sidecar for an output artifact."""
+    audit = mysumstats.meta.get("gwaspipe", {}).get("assembly_validation")
+    provenance_path = Path(f"{output_path}.provenance.json")
+    provenance = {
+        "gwaspipe_version": __version__,
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "source_path": str(Path(source_path).resolve()) if source_path is not None else None,
+        "output_path": str(Path(output_path).resolve()),
+        "assembly_validation": audit,
+    }
+    if steps is not None:
+        provenance["steps"] = steps
+    qc_steps = mysumstats.meta.get("gwaspipe", {}).get("qc_steps")
+    if qc_steps:
+        provenance["qc"] = {"steps": qc_steps}
+    with provenance_path.open("w") as output_file:
+        json.dump(provenance, output_file, indent=2, sort_keys=True)
 
 
 class SumstatsManager:
@@ -416,6 +514,16 @@ def main(
 
         if run:
             logger.info(f"Started {step} step")
+            qc_rows_before = len(sm.mysumstats.data) if step in _QC_STEPS else None
+            qc_exclusion_counts = {}
+            qc_metrics = {}
+            qc_log_text = getattr(sm.mysumstats.log, "log_text", None)
+            qc_log_start = (
+                len(qc_log_text)
+                if step in {"basic_check", "canonicalize_effect_alleles", "sort_alphabetically"}
+                and isinstance(qc_log_text, str)
+                else None
+            )
             if step == "write_snp_mapping":
                 output_path = str(Path(workspace_path, "table"))
                 sm.mysumstats.data["EQUALS"] = sm.mysumstats.data["SNPID"] == sm.mysumstats.data["PREVIOUS_ID"]
@@ -429,6 +537,8 @@ def main(
                 _write_run_provenance(output_path, sm.mysumstats, input_file_path)
             elif step == "basic_check":
                 sm.mysumstats.basic_check(**gl_params)
+                if qc_log_start is not None:
+                    qc_exclusion_counts = _basic_check_exclusion_counts(sm.mysumstats.log.log_text[qc_log_start:])
                 if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "infer_build":
@@ -481,6 +591,10 @@ def main(
                 if step == "sort_alphabetically":
                     logger.warning("sort_alphabetically is deprecated; use canonicalize_effect_alleles instead.")
                 sm.order_alleles(**gl_params)
+                if qc_log_start is not None:
+                    qc_metrics["flipped_alleles"] = _order_alleles_flipped_count(
+                        sm.mysumstats.log.log_text[qc_log_start:]
+                    )
                 if not if_eaf_float_format and "EAF" in sm.mysumstats.data.columns:
                     sm.mysumstats.data["EAF"] = round(sm.mysumstats.data["EAF"].astype("float64"), 7)
             elif step == "write_pickle":
@@ -528,6 +642,14 @@ def main(
                 nr_multiallelic_loci = df.groupby(["CHR", "POS"])["SNPID"].nunique().gt(1).sum()
 
                 sm.mysumstats.data = df
+                qc_exclusion_counts = {
+                    "duplicate_snpid_eaf_beta_se": int(nr_dup_snps),
+                    "conflicting_snpid_eaf_beta_se": int(nr_ambiguous_snps),
+                }
+                qc_metrics = {
+                    "multiallelic_variant_rows": int(nr_multiallelic_snps),
+                    "multiallelic_loci": int(nr_multiallelic_loci),
+                }
 
                 sm.mysumstats.log.write("Start to check ambiguous variants...")
                 sm.mysumstats.log.write(f" -Dropped duplicated SNPs: {nr_dup_snps}")
@@ -541,6 +663,8 @@ def main(
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "png"])))
                 cut = round(-np.log10(gl_params["sig_level"])) + params["dist"]
                 sm.mysumstats.plot_mqq(cut=cut, save=output_path, **gl_params)
+            if qc_rows_before is not None:
+                _record_qc_step(sm.mysumstats, step, qc_rows_before, qc_exclusion_counts, qc_metrics)
             logger.info(f"Finished {step} step")
         else:
             logger.info(f"Skipping {step} step")

@@ -12,6 +12,9 @@ from gwaspipe import __version__
 from gwaspipe.gwaspipe import (
     AssemblyValidationError,
     SumstatsManager,
+    _basic_check_exclusion_counts,
+    _order_alleles_flipped_count,
+    _record_qc_step,
     _require_validated_assembly,
     _write_run_provenance,
     validate_declared_assembly,
@@ -267,6 +270,46 @@ class TestAssemblyValidation(unittest.TestCase):
             "assembly_validation": {"min_hapmap3_matches": 10000, "allow_override": False},
         }
 
+    def test_parses_basic_check_exclusion_reasons(self):
+        exclusions = _basic_check_exclusion_counts(
+            "\n".join(
+                [
+                    " -Removed variants outliers: 4",
+                    " -Removed variants with bad positions: 6",
+                    " -Removed variants with NA alleles or alleles that contain bases other than A/C/T/G: 2",
+                    " -Removed variants based on SNPID: 3",
+                    " -Removed variants multiallelic variants: 1",
+                    " -Removed 864 variants with bad/na P.",
+                    " -Removed variants in total: 10",
+                ]
+            )
+        )
+
+        self.assertEqual(
+            exclusions,
+            {
+                "basic_check_position_out_of_bounds": 4,
+                "basic_check_missing_or_invalid_position": 2,
+                "basic_check_missing_or_invalid_allele": 2,
+                "basic_check_duplicate_snpid": 3,
+                "basic_check_multiallelic_variant": 1,
+                "basic_check_invalid_or_missing_p_value": 864,
+            },
+        )
+
+    def test_counts_allele_flips_from_canonicalization_log(self):
+        self.assertEqual(
+            _order_alleles_flipped_count(
+                "\n".join(
+                    [
+                        "  -For Flipped match (2 matches): convert STATUS...",
+                        "  -For Flipped match (3 matches): convert STATUS...",
+                    ]
+                )
+            ),
+            5,
+        )
+
     @patch("gwaspipe.gwaspipe._hapmap3_match_counts", return_value={"19": 2, "38": 10000})
     def test_records_successful_assembly_audit(self, mock_match_counts):
         audit = validate_declared_assembly(self.sumstats, self.config)
@@ -321,6 +364,17 @@ class TestAssemblyValidation(unittest.TestCase):
 
     def test_writes_json_provenance_sidecar(self):
         self.sumstats.meta["gwaspipe"] = {"assembly_validation": {"decision": "passed"}}
+        self.sumstats.data = pd.DataFrame({"CHR": [1]})
+        _record_qc_step(
+            self.sumstats,
+            "filter_conflicting_snpids",
+            rows_before=3,
+            exclusion_counts={
+                "duplicate_snpid_eaf_beta_se": 1,
+                "conflicting_snpid_eaf_beta_se": 1,
+            },
+            metrics={"multiallelic_variant_rows": 4, "multiallelic_loci": 2},
+        )
         with TemporaryDirectory() as temporary_directory:
             output_path = Path(temporary_directory, "summary_statistics")
             source_path = Path("input.tsv")
@@ -332,9 +386,22 @@ class TestAssemblyValidation(unittest.TestCase):
             self.assertEqual(provenance["gwaspipe_version"], __version__)
             timestamp = datetime.fromisoformat(provenance["timestamp_utc"])
             self.assertEqual(timestamp.tzinfo, UTC)
-            self.assertEqual(provenance["source_path"], str(source_path))
-            self.assertEqual(provenance["output_path"], str(output_path))
+            self.assertEqual(provenance["source_path"], str(source_path.resolve()))
+            self.assertEqual(provenance["output_path"], str(output_path.resolve()))
             self.assertEqual(provenance["assembly_validation"]["decision"], "passed")
+            qc_step = provenance["qc"]["steps"][0]
+            self.assertEqual(qc_step["rows_before"], 3)
+            self.assertEqual(qc_step["rows_after"], 1)
+            self.assertEqual(qc_step["rows_excluded"], 2)
+            self.assertEqual(
+                qc_step["exclusions"],
+                [
+                    {"reason_code": "duplicate_snpid_eaf_beta_se", "row_count": 1},
+                    {"reason_code": "conflicting_snpid_eaf_beta_se", "row_count": 1},
+                ],
+            )
+            self.assertEqual(qc_step["metrics"]["multiallelic_variant_rows"], 4)
+            self.assertEqual(qc_step["metrics"]["multiallelic_loci"], 2)
 
 
 if __name__ == "__main__":
