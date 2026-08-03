@@ -1,3 +1,10 @@
+## [0.7.0] - 2026-08-03
+
+### 🚀 Features
+
+- Improve the provenance records
+- Introduce comprehensive QC auditing and run provenance
+- *(formatbook)* Add N definition to fastgwa format
 ## [0.6.0] - 2026-07-29
 
 ### 🚀 Features
@@ -11,6 +18,10 @@
 - Move logger creation before the empty-dataframe branch
 - Validate required columns, status format, missing values, and allele alphabet
 - Forward YAML parameters consistently and standardize on n_cores label
+
+### 💼 Other
+
+- Bump version
 
 ### 🧪 Testing
 
