@@ -552,6 +552,17 @@ def main(
             elif step == "liftover":
                 input_audit = _require_validated_assembly(sm.mysumstats)
                 sm.mysumstats.liftover(**gl_params)
+
+                sm.mysumstats.log.write("Start to process unmapped variants...")
+                unmapped_mask = sm.mysumstats.data["STATUS"].astype(str).str.startswith("97")
+                unmapped = sm.mysumstats.data.loc[unmapped_mask].copy()
+                mapped = sm.mysumstats.data.loc[~unmapped_mask].copy()
+                sm.mysumstats.data = mapped
+                output_path = str(Path(workspace_path, ".".join([input_file_stem, "unmapped_variants.tsv.gz"])))
+                sm.mysumstats.log.write(f" -Saving {len(unmapped)} unmapped variants to: {output_path}")
+                unmapped.to_csv(output_path, sep="\t", index=False, compression="gzip")
+                sm.mysumstats.log.write("Unmapped variants saved successfully!")
+
                 if "to_build" not in gl_params:
                     raise AssemblyValidationError("liftover requires gl_params.to_build for post-liftover validation")
                 output_audit = validate_declared_assembly(
