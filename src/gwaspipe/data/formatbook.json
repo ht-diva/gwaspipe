@@ -201,6 +201,7 @@
             "format_na": ".",
             "format_header": true,
             "format_col_order": [
+                "#CHROM",
                 "POS",
                 "SNPID",
                 "NEA",
