@@ -44,6 +44,7 @@ _QC_STEPS = {
 _GWASLAB_REMOVAL_PATTERN = re.compile(r"-Removed variants (.+): (\d+)$")
 _GWASLAB_COUNT_FIRST_REMOVAL_PATTERN = re.compile(r"-Removed (\d+) variants (.+?)[.:]$")
 _ORDER_ALLELES_FLIPPED_PATTERN = re.compile(r"-For Flipped match \((\d+) matches\)")
+_EXTREME_P_THRESHOLD = 1e-300
 
 
 def _basic_check_exclusion_counts(log_delta):
@@ -308,23 +309,54 @@ class SumstatsManager:
         if bcfliftover:
             self.mysumstats.data.drop(columns=["rsID"], inplace=True)
 
-    def fill_mlog10p(self, gl_params):
+    def fill_mlog10p(self, gl_params) -> bool:
         """
-        Fill the MLOG10P column in the sumstats data using P column
-        if it is not already present and the P column is present, and the extreme argument is False.
-        This function replicates the original behaviour of GWASLab, before v4, when the argument extreme is False.
-        The current default in v4 is to always use the extreme methods.
+        Fill the MLOG10P column using standard and extreme-value calculations.
+
+        When the argument extreme is False, rows with P values below
+        _EXTREME_P_THRESHOLD are processed using extreme-value methods.
+        Remaining rows are processed using the P-to-MLOG10P conversion.
+        This function replicates the pre-v4 GWASLab behavior for non-extreme P
+        values, while handling extremely small P values.
+        Note: The current default in v4 is to always use the extreme methods.
+
+        Returns:
+            True if MLOG10P was handled by this method; otherwise False.
         """
         if (
             not gl_params.get("extreme")
             and "MLOG10P" in gl_params.get("to_fill", [])
             and "P" in self.mysumstats.data.columns
         ):
-            from gwaslab.util.util_in_fill_data import fill_mlog10p as _fill_mlog10p
+            from gwaslab.util.util_in_fill_data import (
+                fill_extreme_mlog10p as _fill_extreme_mlog10p,
+                fill_mlog10p as _fill_mlog10p,
+            )
 
-            self.mysumstats.log.write("Starting to fill the MLOG10P column")
-            _fill_mlog10p(self.mysumstats, self.mysumstats.log)
-            self.mysumstats.log.write("Finished filling the MLOG10P column")
+            data = self.mysumstats.data
+            p = data["P"]
+            extreme_mask = p.lt(_EXTREME_P_THRESHOLD)
+            nonextreme_mask = ~extreme_mask
+
+            if extreme_mask.any():
+                extreme_sumstats = data.loc[extreme_mask].copy()
+                self.mysumstats.log.write(f"Extremely low P detected: {extreme_mask.sum()}")
+                self.mysumstats.log.write("Start filling MLOG10P for extremely low P using extreme-value methods...")
+                _fill_extreme_mlog10p(extreme_sumstats, df=None, log=self.mysumstats.log)
+                data.loc[extreme_mask, "MLOG10P"] = extreme_sumstats["MLOG10P"].to_numpy()
+                self.mysumstats.log.write("Finished filling MLOG10P with extreme-value methods.")
+
+            if nonextreme_mask.any():
+                nonextreme_sumstats = data.loc[nonextreme_mask].copy()
+                self.mysumstats.log.write("Start filling MLOG10P from P...")
+                _fill_mlog10p(nonextreme_sumstats, log=self.mysumstats.log)
+                data.loc[nonextreme_mask, "MLOG10P"] = nonextreme_sumstats["MLOG10P"].to_numpy()
+                self.mysumstats.log.write("Finished filling MLOG10P from P.")
+
+            self.mysumstats.data = data
+            return True
+        else:
+            return False
 
     def float_dict_custom(self, gp):
         """Preserve the number of decimals from the input data (statistics)"""
@@ -544,8 +576,11 @@ def main(
             elif step == "infer_build":
                 validate_declared_assembly(sm.mysumstats, cm.config, gl_params)
             elif step == "fill_data":
-                sm.fill_mlog10p(gl_params)
-                sm.mysumstats.fill_data(**gl_params)
+                mlog10p_handled = sm.fill_mlog10p(gl_params)
+                if mlog10p_handled:
+                    gl_params["to_fill"] = [x for x in gl_params.get("to_fill", []) if x != "MLOG10P"]
+                if gl_params["to_fill"]:
+                    sm.mysumstats.fill_data(**gl_params)
             elif step == "harmonize":
                 _require_validated_assembly(sm.mysumstats)
                 sm.mysumstats.harmonize(**gl_params)
