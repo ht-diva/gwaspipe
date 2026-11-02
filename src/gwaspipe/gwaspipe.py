@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 import gwaslab as gl
 import numpy as np
+import pandas as pd
 import polars as pl
 
 from gwaspipe import __appname__, __version__, logger
@@ -330,6 +331,8 @@ class SumstatsManager:
         ):
             from gwaslab.util.util_in_fill_data import (
                 fill_extreme_mlog10p as _fill_extreme_mlog10p,
+            )
+            from gwaslab.util.util_in_fill_data import (
                 fill_mlog10p as _fill_mlog10p,
             )
 
@@ -368,6 +371,32 @@ class SumstatsManager:
         if "float_formats" in gp:
             float_dict.update({k: v for k, v in gp["float_formats"].items() if k in float_dict})
         return float_dict
+
+    def write_parquet(self, output_path, **gl_params):
+        """Export numeric chromosomes with bounded, configurable Parquet row groups."""
+        parquet_options = {
+            "row_group_size": 65_536,
+            **(gl_params.get("to_tabular_kwargs") or {}),
+            "engine": "pyarrow",
+        }
+        export_params = {
+            **gl_params,
+            "tab_fmt": "parquet",
+            # GWASLab otherwise maps integer chromosomes back to string labels.
+            "xymt_number": True,
+            "chr_prefix": "",
+            "to_tabular_kwargs": parquet_options,
+        }
+        original_chr = self.mysumstats.data["CHR"]
+        numeric_chr = pd.to_numeric(original_chr, errors="raise").astype("Int16")
+        try:
+            # Automatic build inference can normalize CHR back to Int64.
+            if export_params.get("build") is None:
+                export_params["build"] = self.mysumstats.build
+            self.mysumstats.data["CHR"] = numeric_chr
+            self.mysumstats.to_format(output_path, **export_params)
+        finally:
+            self.mysumstats.data["CHR"] = original_chr
 
     def order_alleles(
         self,
@@ -656,7 +685,11 @@ def main(
                 output_path = str(Path(workspace_path, ".".join([input_file_stem, "pkl"])))
                 gl.dump_pickle(sm.mysumstats, output_path, overwrite=params["overwrite"])
                 _write_run_provenance(output_path, sm.mysumstats, input_file_path)
-            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa", "write_parquet"]:
+            elif step == "write_parquet":
+                output_path = str(Path(workspace_path, input_file_stem))
+                sm.write_parquet(output_path, **gl_params)
+                _write_run_provenance(output_path, sm.mysumstats, input_file_path)
+            elif step in ["write_regenie", "write_ldsc", "write_metal", "write_tsv", "write_fastgwa"]:
                 output_path = str(Path(workspace_path, input_file_stem))
                 gl_params["float_formats"] = sm.float_dict_custom(gl_params)
                 sm.mysumstats.to_format(output_path, **gl_params)

@@ -137,6 +137,33 @@ log_filename: "gwaspipe.log"
 
 ## Advanced Configuration
 
+### Parquet Export
+
+The `write_parquet` step writes `CHR` as a nullable 16-bit integer and defaults to
+65,536 rows per row group. Chromosomes must use numeric codes (23, 24, and 25 for
+human X, Y, and MT); invalid numeric values raise an error. This export keeps
+numeric chromosome codes even if `xymt_number` or `chr_prefix` request text labels.
+The in-memory chromosome column is restored after export for subsequent steps.
+
+To change the row-group size or compression, configure PyArrow writer options:
+
+```yaml
+write_parquet:
+  params:
+    run: True
+    workspace: "outputs"
+    workspace_subfolder: True
+  gl_params:
+    fmt: "gwaslab"
+    tab_fmt: "parquet"
+    to_tabular_kwargs:
+      row_group_size: 65536
+      compression: "snappy"
+```
+
+Row-group size is measured in rows. Export preserves the existing row order;
+run harmonization before export to obtain data sorted by chromosome and position.
+
 ### Allele Ordering
 
 Configure the `canonicalize_effect_alleles` step in your workflow. Its parameters are
