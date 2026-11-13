@@ -75,6 +75,8 @@ steps:
     gl_params:
       fmt: "gwaslab"
       tab_fmt: "parquet"
+      to_tabular_kwargs:
+        row_group_size: 65536
 
 # Filename transformation
 # use the filename mask to extract elements from the filename to be used in the output filename
