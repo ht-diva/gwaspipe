@@ -14,7 +14,7 @@ from gwaspipe.gwaspipe import SumstatsManager, main
 def make_manager(chromosomes):
     data = pd.DataFrame(
         {
-            "CHR": pd.Categorical(chromosomes),
+            "CHR": pd.Series(chromosomes, dtype="string"),
             "POS": range(1, len(chromosomes) + 1),
             "EA": "A",
             "NEA": "G",
@@ -25,8 +25,6 @@ def make_manager(chromosomes):
     )
     manager = SumstatsManager.__new__(SumstatsManager)
     manager.mysumstats = gl.Sumstats(data, build="38", verbose=False)
-    # Exercise the categorical string chromosomes found in input/export data.
-    manager.mysumstats.data["CHR"] = data["CHR"]
     return manager
 
 

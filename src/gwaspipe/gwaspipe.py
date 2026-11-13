@@ -388,7 +388,10 @@ class SumstatsManager:
             "to_tabular_kwargs": parquet_options,
         }
         original_chr = self.mysumstats.data["CHR"]
-        numeric_chr = pd.to_numeric(original_chr, errors="raise").astype("Int16")
+        numeric_chr = pd.to_numeric(original_chr, errors="raise")
+        if not numeric_chr.dropna().isin(range(1, 26)).all():
+            raise ValueError("CHR must contain 1–25 or missing values.")
+        numeric_chr = numeric_chr.astype("Int16")
         try:
             # Automatic build inference can normalize CHR back to Int64.
             if export_params.get("build") is None:
